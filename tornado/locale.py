@@ -82,10 +82,7 @@ def set_default_locale(code: str) -> None:
     the default locale to the destination locale. Consequently, you don't
     need to create a translation file for the default locale.
     """
-    global _default_locale
-    global _supported_locales
-    _default_locale = code
-    _supported_locales = frozenset(list(_translations.keys()) + [_default_locale])
+    pass
 
 
 def load_translations(directory: str, encoding: str | None = None) -> None:
@@ -123,56 +120,7 @@ def load_translations(directory: str, encoding: str | None = None) -> None:
        Added ``encoding`` parameter. Added support for BOM-based encoding
        detection, UTF-16, and UTF-8-with-BOM.
     """
-    global _translations
-    global _supported_locales
-    _translations = {}
-    for path in os.listdir(directory):
-        if not path.endswith(".csv"):
-            continue
-        locale, extension = path.split(".")
-        if not re.match("[a-z]+(_[A-Z]+)?$", locale):
-            gen_log.error(
-                "Unrecognized locale %r (path: %s)",
-                locale,
-                os.path.join(directory, path),
-            )
-            continue
-        full_path = os.path.join(directory, path)
-        if encoding is None:
-            # Try to autodetect encoding based on the BOM.
-            with open(full_path, "rb") as bf:
-                data = bf.read(len(codecs.BOM_UTF16_LE))
-            if data in (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE):
-                encoding = "utf-16"
-            else:
-                # utf-8-sig is "utf-8 with optional BOM". It's discouraged
-                # in most cases but is common with CSV files because Excel
-                # cannot read utf-8 files without a BOM.
-                encoding = "utf-8-sig"
-        # python 3: csv.reader requires a file open in text mode.
-        # Specify an encoding to avoid dependence on $LANG environment variable.
-        with open(full_path, encoding=encoding) as f:
-            _translations[locale] = {}
-            for i, row in enumerate(csv.reader(f)):
-                if not row or len(row) < 2:
-                    continue
-                row = [escape.to_unicode(c).strip() for c in row]
-                english, translation = row[:2]
-                if len(row) > 2:
-                    plural = row[2] or "unknown"
-                else:
-                    plural = "unknown"
-                if plural not in ("plural", "singular", "unknown"):
-                    gen_log.error(
-                        "Unrecognized plural indicator %r in %s line %d",
-                        plural,
-                        path,
-                        i + 1,
-                    )
-                    continue
-                _translations[locale].setdefault(plural, {})[english] = translation
-    _supported_locales = frozenset(list(_translations.keys()) + [_default_locale])
-    gen_log.debug("Supported locales: %s", sorted(_supported_locales))
+    pass
 
 
 def load_gettext_translations(directory: str, domain: str) -> None:
@@ -219,7 +167,7 @@ def load_gettext_translations(directory: str, domain: str) -> None:
 
 def get_supported_locales() -> Iterable[str]:
     """Returns a list of all the supported locale codes."""
-    return _supported_locales
+    pass
 
 
 class Locale:
@@ -349,88 +297,7 @@ class Locale:
            Aware `datetime.datetime` objects are now supported (naive
            datetimes are still assumed to be UTC).
         """
-        if isinstance(date, (int, float)):
-            date = datetime.datetime.fromtimestamp(date, datetime.timezone.utc)
-        if date.tzinfo is None:
-            date = date.replace(tzinfo=datetime.timezone.utc)
-        now = datetime.datetime.now(datetime.timezone.utc)
-        if date > now:
-            if relative and (date - now).seconds < 60:
-                # Due to click skew, things are some things slightly
-                # in the future. Round timestamps in the immediate
-                # future down to now in relative mode.
-                date = now
-            else:
-                # Otherwise, future dates always use the full format.
-                full_format = True
-        local_date = date - datetime.timedelta(minutes=gmt_offset)
-        local_now = now - datetime.timedelta(minutes=gmt_offset)
-        local_yesterday = local_now - datetime.timedelta(hours=24)
-        difference = now - date
-        seconds = difference.seconds
-        days = difference.days
-
-        _ = self.translate
-        format = None
-        if not full_format:
-            if relative and days == 0:
-                if seconds < 50:
-                    return _("1 second ago", "%(seconds)d seconds ago", seconds) % {
-                        "seconds": seconds
-                    }
-
-                if seconds < 50 * 60:
-                    minutes = round(seconds / 60.0)
-                    return _("1 minute ago", "%(minutes)d minutes ago", minutes) % {
-                        "minutes": minutes
-                    }
-
-                hours = round(seconds / (60.0 * 60))
-                return _("1 hour ago", "%(hours)d hours ago", hours) % {"hours": hours}
-
-            if days == 0:
-                format = _("%(time)s")
-            elif days == 1 and local_date.day == local_yesterday.day and relative:
-                format = _("yesterday") if shorter else _("yesterday at %(time)s")
-            elif days < 5:
-                format = _("%(weekday)s") if shorter else _("%(weekday)s at %(time)s")
-            elif days < 334:  # 11mo, since confusing for same month last year
-                format = (
-                    _("%(month_name)s %(day)s")
-                    if shorter
-                    else _("%(month_name)s %(day)s at %(time)s")
-                )
-
-        if format is None:
-            format = (
-                _("%(month_name)s %(day)s, %(year)s")
-                if shorter
-                else _("%(month_name)s %(day)s, %(year)s at %(time)s")
-            )
-
-        tfhour_clock = self.code not in ("en", "en_US", "zh_CN")
-        if tfhour_clock:
-            str_time = "%d:%02d" % (local_date.hour, local_date.minute)
-        elif self.code == "zh_CN":
-            str_time = "%s%d:%02d" % (
-                ("\u4e0a\u5348", "\u4e0b\u5348")[local_date.hour >= 12],
-                local_date.hour % 12 or 12,
-                local_date.minute,
-            )
-        else:
-            str_time = "%d:%02d %s" % (
-                local_date.hour % 12 or 12,
-                local_date.minute,
-                ("am", "pm")[local_date.hour >= 12],
-            )
-
-        return format % {
-            "month_name": self._months[local_date.month - 1],
-            "weekday": self._weekdays[local_date.weekday()],
-            "day": str(local_date.day),
-            "year": str(local_date.year),
-            "time": str_time,
-        }
+        pass
 
     def format_day(
         self, date: datetime.datetime, gmt_offset: int = 0, dow: bool = True
@@ -440,19 +307,7 @@ class Locale:
         Example: "Monday, January 22". You can remove the day of week with
         ``dow=False``.
         """
-        local_date = date - datetime.timedelta(minutes=gmt_offset)
-        _ = self.translate
-        if dow:
-            return _("%(weekday)s, %(month_name)s %(day)s") % {
-                "month_name": self._months[local_date.month - 1],
-                "weekday": self._weekdays[local_date.weekday()],
-                "day": str(local_date.day),
-            }
-        else:
-            return _("%(month_name)s %(day)s") % {
-                "month_name": self._months[local_date.month - 1],
-                "day": str(local_date.day),
-            }
+        pass
 
     def list(self, parts: Any) -> str:
         """Returns a comma-separated list for the given list of parts.
@@ -460,27 +315,11 @@ class Locale:
         The format is, e.g., "A, B and C", "A and B" or just "A" for lists
         of size 1.
         """
-        _ = self.translate
-        if len(parts) == 0:
-            return ""
-        if len(parts) == 1:
-            return parts[0]
-        comma = " \u0648 " if self.code.startswith("fa") else ", "
-        return _("%(commas)s and %(last)s") % {
-            "commas": comma.join(parts[:-1]),
-            "last": parts[len(parts) - 1],
-        }
+        pass
 
     def friendly_number(self, value: int) -> str:
         """Returns a comma-separated number for the given integer."""
-        if self.code not in ("en", "en_US"):
-            return str(value)
-        s = str(value)
-        parts = []
-        while s:
-            parts.append(s[-3:])
-            s = s[:-3]
-        return ",".join(reversed(parts))
+        pass
 
 
 class CSVLocale(Locale):

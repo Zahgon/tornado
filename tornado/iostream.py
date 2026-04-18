@@ -312,7 +312,7 @@ class BaseIOStream:
         with additional information, or None if no such information is
         available.
         """
-        return None
+        pass
 
     def read_until_regex(
         self, regex: bytes, max_bytes: int | None = None
@@ -641,7 +641,7 @@ class BaseIOStream:
 
     def writing(self) -> bool:
         """Returns ``True`` if we are currently writing to the stream."""
-        return bool(self._write_buffer)
+        pass
 
     def closed(self) -> bool:
         """Returns ``True`` if the stream has been closed."""
@@ -666,57 +666,7 @@ class BaseIOStream:
         raise NotImplementedError()
 
     def _handle_events(self, fd: int | ioloop._Selectable, events: int) -> None:
-        if self.closed():
-            gen_log.warning("Got events for closed stream %s", fd)
-            return
-        try:
-            if self._connecting:
-                # Most IOLoops will report a write failed connect
-                # with the WRITE event, but SelectIOLoop reports a
-                # READ as well so we must check for connecting before
-                # either.
-                self._handle_connect()
-            if self.closed():
-                return
-            if events & self.io_loop.READ:
-                self._handle_read()
-            if self.closed():
-                return
-            if events & self.io_loop.WRITE:
-                self._handle_write()
-            if self.closed():
-                return
-            if events & self.io_loop.ERROR:
-                self.error = self.get_fd_error()
-                # We may have queued up a user callback in _handle_read or
-                # _handle_write, so don't close the IOStream until those
-                # callbacks have had a chance to run.
-                self.io_loop.add_callback(self.close)
-                return
-            state = self.io_loop.ERROR
-            if self.reading():
-                state |= self.io_loop.READ
-            if self.writing():
-                state |= self.io_loop.WRITE
-            if state == self.io_loop.ERROR and self._read_buffer_size == 0:
-                # If the connection is idle, listen for reads too so
-                # we can tell if the connection is closed.  If there is
-                # data in the read buffer we won't run the close callback
-                # yet anyway, so we don't need to listen in this case.
-                state |= self.io_loop.READ
-            if state != self._state:
-                assert (
-                    self._state is not None
-                ), "shouldn't happen: _handle_events without self._state"
-                self._state = state
-                self.io_loop.update_handler(self.fileno(), self._state)
-        except UnsatisfiableReadError as e:
-            gen_log.info("Unsatisfiable read, closing connection: %s" % e)
-            self.close(exc_info=e)
-        except Exception as e:
-            gen_log.error("Uncaught exception, closing connection.", exc_info=True)
-            self.close(exc_info=e)
-            raise
+        pass
 
     def _read_to_buffer_loop(self) -> int | None:
         # This method is called from _handle_read and _try_inline_read.
@@ -760,18 +710,7 @@ class BaseIOStream:
         return self._find_read_pos()
 
     def _handle_read(self) -> None:
-        try:
-            pos = self._read_to_buffer_loop()
-        except UnsatisfiableReadError:
-            raise
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            gen_log.warning("error on read: %s" % e)
-            self.close(exc_info=e)
-            return
-        if pos is not None:
-            self._read_from_buffer(pos)
+        pass
 
     def _start_read(self) -> Future:
         if self._read_future is not None:
@@ -1096,8 +1035,7 @@ class IOStream(BaseIOStream):
         self.socket = None  # type: ignore
 
     def get_fd_error(self) -> Exception | None:
-        errno = self.socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
-        return socket.error(errno, os.strerror(errno))
+        pass
 
     def read_from_fd(self, buf: bytearray | memoryview) -> int | None:
         try:
@@ -1259,32 +1197,7 @@ class IOStream(BaseIOStream):
         return future
 
     def _handle_connect(self) -> None:
-        try:
-            err = self.socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
-        except OSError as e:
-            # Hurd doesn't allow SO_ERROR for loopback sockets because all
-            # errors for such sockets are reported synchronously.
-            if errno_from_exception(e) == errno.ENOPROTOOPT:
-                err = 0
-        if err != 0:
-            self.error = socket.error(err, os.strerror(err))
-            # IOLoop implementations may vary: some of them return
-            # an error state before the socket becomes writable, so
-            # in that case a connection failure would be handled by the
-            # error path in _handle_events instead of here.
-            if self._connect_future is None:
-                gen_log.warning(
-                    "Connect error on fd %s: %s",
-                    self.socket.fileno(),
-                    errno.errorcode[err],
-                )
-            self.close()
-            return
-        if self._connect_future is not None:
-            future = self._connect_future
-            self._connect_future = None
-            future_set_result_unless_cancelled(future, self)
-        self._connecting = False
+        pass
 
     def set_nodelay(self, value: bool) -> None:
         if self.socket is not None and self.socket.family in (
@@ -1344,7 +1257,7 @@ class SSLIOStream(IOStream):
         return self._handshake_reading or super().reading()
 
     def writing(self) -> bool:
-        return self._handshake_writing or super().writing()
+        pass
 
     def _do_ssl_handshake(self) -> None:
         # Based on code from test_ssl.py in the python stdlib
@@ -1404,10 +1317,7 @@ class SSLIOStream(IOStream):
             future_set_result_unless_cancelled(future, self)
 
     def _handle_read(self) -> None:
-        if self._ssl_accepting:
-            self._do_ssl_handshake()
-            return
-        super()._handle_read()
+        pass
 
     def _handle_write(self) -> None:
         if self._ssl_accepting:
@@ -1436,31 +1346,7 @@ class SSLIOStream(IOStream):
 
     def _handle_connect(self) -> None:
         # Call the superclass method to check for errors.
-        super()._handle_connect()
-        if self.closed():
-            return
-        # When the connection is complete, wrap the socket for SSL
-        # traffic.  Note that we do this by overriding _handle_connect
-        # instead of by passing a callback to super().connect because
-        # user callbacks are enqueued asynchronously on the IOLoop,
-        # but since _handle_events calls _handle_connect immediately
-        # followed by _handle_write we need this to be synchronous.
-        #
-        # The IOLoop will get confused if we swap out self.socket while the
-        # fd is registered, so remove it now and re-register after
-        # wrap_socket().
-        self.io_loop.remove_handler(self.socket)
-        old_state = self._state
-        assert old_state is not None
-        self._state = None
-        self.socket = ssl_wrap_socket(
-            self.socket,
-            self._ssl_options,
-            server_hostname=self._server_hostname,
-            do_handshake_on_connect=False,
-            server_side=False,
-        )
-        self._add_io_state(old_state)
+        pass
 
     def wait_for_handshake(self) -> "Future[SSLIOStream]":
         """Wait for the initial SSL handshake to complete.
@@ -1603,6 +1489,4 @@ class PipeIOStream(BaseIOStream):
 
 
 def doctests() -> Any:
-    import doctest
-
-    return doctest.DocTestSuite()
+    pass

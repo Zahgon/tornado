@@ -66,21 +66,7 @@ _selector_loops: set["SelectorThread"] = set()
 
 
 def _atexit_callback() -> None:
-    for loop in _selector_loops:
-        with loop._select_cond:
-            loop._closing_selector = True
-            loop._select_cond.notify()
-        try:
-            loop._waker_w.send(b"a")
-        except BlockingIOError:
-            pass
-        if loop._thread is not None:
-            # If we don't join our (daemon) thread here, we may get a deadlock
-            # during interpreter shutdown. I don't really understand why. This
-            # deadlock happens every time in CI (both travis and appveyor) but
-            # I've never been able to reproduce locally.
-            loop._thread.join()
-    _selector_loops.clear()
+    pass
 
 
 atexit.register(_atexit_callback)
@@ -199,8 +185,7 @@ class BaseAsyncIOLoop(IOLoop):
         del self.handlers[fd]
 
     def _handle_events(self, fd: int, events: int) -> None:
-        fileobj, handler_func = self.handlers[fd]
-        handler_func(fileobj, events)
+        pass
 
     def start(self) -> None:
         self.asyncio_loop.run_forever()
@@ -250,13 +235,7 @@ class BaseAsyncIOLoop(IOLoop):
     def add_callback_from_signal(
         self, callback: Callable, *args: Any, **kwargs: Any
     ) -> None:
-        warnings.warn("add_callback_from_signal is deprecated", DeprecationWarning)
-        try:
-            self.asyncio_loop.call_soon_threadsafe(
-                self._run_callback, functools.partial(callback, *args, **kwargs)
-            )
-        except RuntimeError:
-            pass
+        pass
 
     def run_in_executor(
         self,
@@ -267,7 +246,7 @@ class BaseAsyncIOLoop(IOLoop):
         return self.asyncio_loop.run_in_executor(executor, func, *args)
 
     def set_default_executor(self, executor: concurrent.futures.Executor) -> None:
-        return self.asyncio_loop.set_default_executor(executor)
+        pass
 
 
 class AsyncIOMainLoop(BaseAsyncIOLoop):
@@ -363,7 +342,7 @@ def to_tornado_future(asyncio_future: asyncio.Future) -> asyncio.Future:
        Tornado ``Futures`` have been merged with `asyncio.Future`,
        so this method is now a no-op.
     """
-    return asyncio_future
+    pass
 
 
 def to_asyncio_future(tornado_future: asyncio.Future) -> asyncio.Future:
@@ -553,10 +532,7 @@ class SelectorThread:
             pass
 
     def _consume_waker(self) -> None:
-        try:
-            self._waker_r.recv(1024)
-        except BlockingIOError:
-            pass
+        pass
 
     def _start_select(self) -> None:
         # Capture reader and writer sets here in the event loop
@@ -568,90 +544,19 @@ class SelectorThread:
             self._select_cond.notify()
 
     def _run_select(self) -> None:
-        while True:
-            with self._select_cond:
-                while self._select_args is None and not self._closing_selector:
-                    self._select_cond.wait()
-                if self._closing_selector:
-                    return
-                assert self._select_args is not None
-                to_read, to_write = self._select_args
-                self._select_args = None
-
-            # We use the simpler interface of the select module instead of
-            # the more stateful interface in the selectors module because
-            # this class is only intended for use on windows, where
-            # select.select is the only option. The selector interface
-            # does not have well-documented thread-safety semantics that
-            # we can rely on so ensuring proper synchronization would be
-            # tricky.
-            try:
-                # On windows, selecting on a socket for write will not
-                # return the socket when there is an error (but selecting
-                # for reads works). Also select for errors when selecting
-                # for writes, and merge the results.
-                #
-                # This pattern is also used in
-                # https://github.com/python/cpython/blob/v3.8.0/Lib/selectors.py#L312-L317
-                rs, ws, xs = select.select(to_read, to_write, to_write)
-                ws = ws + xs
-            except OSError as e:
-                # After remove_reader or remove_writer is called, the file
-                # descriptor may subsequently be closed on the event loop
-                # thread. It's possible that this select thread hasn't
-                # gotten into the select system call by the time that
-                # happens in which case (at least on macOS), select may
-                # raise a "bad file descriptor" error. If we get that
-                # error, check and see if we're also being woken up by
-                # polling the waker alone. If we are, just return to the
-                # event loop and we'll get the updated set of file
-                # descriptors on the next iteration. Otherwise, raise the
-                # original error.
-                if e.errno == getattr(errno, "WSAENOTSOCK", errno.EBADF):
-                    rs, _, _ = select.select([self._waker_r.fileno()], [], [], 0)
-                    if rs:
-                        ws = []
-                    else:
-                        raise
-                else:
-                    raise
-
-            try:
-                self._real_loop.call_soon_threadsafe(
-                    self._handle_select, rs, ws, context=self._main_thread_ctx
-                )
-            except RuntimeError:
-                # "Event loop is closed". Swallow the exception for
-                # consistency with PollIOLoop (and logical consistency
-                # with the fact that we can't guarantee that an
-                # add_callback that completes without error will
-                # eventually execute).
-                pass
-            except AttributeError:
-                # ProactorEventLoop may raise this instead of RuntimeError
-                # if call_soon_threadsafe races with a call to close().
-                # Swallow it too for consistency.
-                pass
+        pass
 
     def _handle_select(
         self, rs: list[_FileDescriptorLike], ws: list[_FileDescriptorLike]
     ) -> None:
-        for r in rs:
-            self._handle_event(r, self._readers)
-        for w in ws:
-            self._handle_event(w, self._writers)
-        self._start_select()
+        pass
 
     def _handle_event(
         self,
         fd: _FileDescriptorLike,
         cb_map: dict[_FileDescriptorLike, Callable],
     ) -> None:
-        try:
-            callback = cb_map[fd]
-        except KeyError:
-            return
-        callback()
+        pass
 
     def add_reader(
         self, fd: _FileDescriptorLike, callback: Callable[..., None], *args: Any

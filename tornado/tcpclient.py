@@ -130,30 +130,7 @@ class _Connector:
         addr: tuple,
         future: "Future[IOStream]",
     ) -> None:
-        self.remaining -= 1
-        try:
-            stream = future.result()
-        except Exception as e:
-            if self.future.done():
-                return
-            # Error: try again (but remember what happened so we have an
-            # error to raise in the end)
-            self.last_error = e
-            self.try_connect(addrs)
-            if self.timeout is not None:
-                # If the first attempt failed, don't wait for the
-                # timeout to try an address from the secondary queue.
-                self.io_loop.remove_timeout(self.timeout)
-                self.on_timeout()
-            return
-        self.clear_timeouts()
-        if self.future.done():
-            # This is a late arrival; just drop it.
-            stream.close()
-        else:
-            self.streams.discard(stream)
-            self.future.set_result((af, addr, stream))
-            self.close_streams()
+        pass
 
     def set_timeout(self, timeout: float) -> None:
         self.timeout = self.io_loop.add_timeout(
@@ -161,13 +138,10 @@ class _Connector:
         )
 
     def on_timeout(self) -> None:
-        self.timeout = None
-        if not self.future.done():
-            self.try_connect(iter(self.secondary_addrs))
+        pass
 
     def clear_timeout(self) -> None:
-        if self.timeout is not None:
-            self.io_loop.remove_timeout(self.timeout)
+        pass
 
     def set_connect_timeout(self, connect_timeout: float | datetime.timedelta) -> None:
         self.connect_timeout = self.io_loop.add_timeout(
@@ -175,19 +149,13 @@ class _Connector:
         )
 
     def on_connect_timeout(self) -> None:
-        if not self.future.done():
-            self.future.set_exception(TimeoutError())
-        self.close_streams()
+        pass
 
     def clear_timeouts(self) -> None:
-        if self.timeout is not None:
-            self.io_loop.remove_timeout(self.timeout)
-        if self.connect_timeout is not None:
-            self.io_loop.remove_timeout(self.connect_timeout)
+        pass
 
     def close_streams(self) -> None:
-        for stream in self.streams:
-            stream.close()
+        pass
 
 
 class TCPClient:
@@ -295,29 +263,4 @@ class TCPClient:
     ) -> tuple[IOStream, "Future[IOStream]"]:
         # Always connect in plaintext; we'll convert to ssl if necessary
         # after one connection has completed.
-        source_port_bind = source_port if isinstance(source_port, int) else 0
-        source_ip_bind = source_ip
-        if source_port_bind and not source_ip:
-            # User required a specific port, but did not specify
-            # a certain source IP, will bind to the default loopback.
-            source_ip_bind = "::1" if af == socket.AF_INET6 else "127.0.0.1"
-            # Trying to use the same address family as the requested af socket:
-            # - 127.0.0.1 for IPv4
-            # - ::1 for IPv6
-        socket_obj = socket.socket(af)
-        if source_port_bind or source_ip_bind:
-            # If the user requires binding also to a specific IP/port.
-            try:
-                socket_obj.bind((source_ip_bind, source_port_bind))
-            except OSError:
-                socket_obj.close()
-                # Fail loudly if unable to use the IP/port.
-                raise
-        try:
-            stream = IOStream(socket_obj, max_buffer_size=max_buffer_size)
-        except OSError as e:
-            fu: Future[IOStream] = Future()
-            fu.set_exception(e)
-            return stream, fu
-        else:
-            return stream, stream.connect(addr)
+        pass

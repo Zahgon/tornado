@@ -202,7 +202,7 @@ class TCPServer:
 
     def add_socket(self, socket: socket.socket) -> None:
         """Singular version of `add_sockets`.  Takes a single socket object."""
-        self.add_sockets([socket])
+        pass
 
     def bind(
         self,
@@ -331,53 +331,4 @@ class TCPServer:
         raise NotImplementedError()
 
     def _handle_connection(self, connection: socket.socket, address: Any) -> None:
-        if self.ssl_options is not None:
-            assert ssl, "OpenSSL required for SSL"
-            try:
-                connection = ssl_wrap_socket(
-                    connection,
-                    self.ssl_options,
-                    server_side=True,
-                    do_handshake_on_connect=False,
-                )
-            except ssl.SSLError as err:
-                if err.args[0] == ssl.SSL_ERROR_EOF:
-                    return connection.close()
-                else:
-                    raise
-            except OSError as err:
-                # If the connection is closed immediately after it is created
-                # (as in a port scan), we can get one of several errors.
-                # wrap_socket makes an internal call to getpeername,
-                # which may return either EINVAL (Mac OS X) or ENOTCONN
-                # (Linux).  If it returns ENOTCONN, this error is
-                # silently swallowed by the ssl module, so we need to
-                # catch another error later on (AttributeError in
-                # SSLIOStream._do_ssl_handshake).
-                # To test this behavior, try nmap with the -sT flag.
-                # https://github.com/tornadoweb/tornado/pull/750
-                if errno_from_exception(err) in (errno.ECONNABORTED, errno.EINVAL):
-                    return connection.close()
-                else:
-                    raise
-        try:
-            if self.ssl_options is not None:
-                stream: IOStream = SSLIOStream(
-                    connection,
-                    max_buffer_size=self.max_buffer_size,
-                    read_chunk_size=self.read_chunk_size,
-                )
-            else:
-                stream = IOStream(
-                    connection,
-                    max_buffer_size=self.max_buffer_size,
-                    read_chunk_size=self.read_chunk_size,
-                )
-
-            future = self.handle_stream(stream, address)
-            if future is not None:
-                IOLoop.current().add_future(
-                    gen.convert_yielded(future), lambda f: f.result()
-                )
-        except Exception:
-            app_log.error("Error in connection callback", exc_info=True)
+        pass

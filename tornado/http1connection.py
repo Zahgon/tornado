@@ -334,13 +334,7 @@ class HTTP1Connection(httputil.HTTPConnection):
         # Note that this callback is only registered on the IOStream
         # when we have finished reading the request and are waiting for
         # the application to produce its response.
-        if self._close_callback is not None:
-            callback = self._close_callback
-            self._close_callback = None
-            callback()
-        if not self._finish_future.done():
-            future_set_result_unless_cancelled(self._finish_future, None)
-        self._clear_callbacks()
+        pass
 
     def close(self) -> None:
         if self.stream is not None:
@@ -532,17 +526,7 @@ class HTTP1Connection(httputil.HTTPConnection):
             future_add_done_callback(self._pending_write, self._finish_request)
 
     def _on_write_complete(self, future: "Future[None]") -> None:
-        exc = future.exception()
-        if exc is not None and not isinstance(exc, iostream.StreamClosedError):
-            future.result()
-        if self._write_callback is not None:
-            callback = self._write_callback
-            self._write_callback = None
-            self.stream.io_loop.add_callback(callback)
-        if self._write_future is not None:
-            future = self._write_future
-            self._write_future = None
-            future_set_result_unless_cancelled(future, None)
+        pass
 
     def _can_keep_alive(
         self, start_line: httputil.RequestStartLine, headers: httputil.HTTPHeaders
@@ -802,40 +786,12 @@ class HTTP1ServerConnection:
 
         :arg delegate: a `.HTTPServerConnectionDelegate`
         """
-        assert isinstance(delegate, httputil.HTTPServerConnectionDelegate)
-        fut = gen.convert_yielded(self._server_request_loop(delegate))
-        self._serving_future = fut
-        # Register the future on the IOLoop so its errors get logged.
-        self.stream.io_loop.add_future(fut, lambda f: f.result())
+        pass
 
     async def _server_request_loop(
         self, delegate: httputil.HTTPServerConnectionDelegate
     ) -> None:
-        try:
-            while True:
-                conn = HTTP1Connection(self.stream, False, self.params, self.context)
-                request_delegate = delegate.start_request(self, conn)
-                try:
-                    ret = await conn.read_response(request_delegate)
-                except (
-                    iostream.StreamClosedError,
-                    iostream.UnsatisfiableReadError,
-                    asyncio.CancelledError,
-                ):
-                    return
-                except _QuietException:
-                    # This exception was already logged.
-                    conn.close()
-                    return
-                except Exception:
-                    gen_log.error("Uncaught exception", exc_info=True)
-                    conn.close()
-                    return
-                if not ret:
-                    return
-                await asyncio.sleep(0)
-        finally:
-            delegate.on_close(self)
+        pass
 
 
 DIGITS = re.compile(r"[0-9]+")

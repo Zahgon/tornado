@@ -102,9 +102,7 @@ class HTTPClient:
         # Create the client while our IOLoop is "current", without
         # clobbering the thread's real current IOLoop (if any).
         async def make_client() -> "AsyncHTTPClient":
-            await gen.sleep(0)
-            assert async_client_class is not None
-            return async_client_class(**kwargs)
+            pass
 
         self._async_client = self._io_loop.run_sync(make_client)
         self._closed = False
@@ -184,9 +182,7 @@ class AsyncHTTPClient(Configurable):
 
     @classmethod
     def configurable_default(cls) -> type[Configurable]:
-        from tornado.simple_httpclient import SimpleAsyncHTTPClient
-
-        return SimpleAsyncHTTPClient
+        pass
 
     @classmethod
     def _async_clients(cls) -> dict[IOLoop, "AsyncHTTPClient"]:
@@ -297,11 +293,7 @@ class AsyncHTTPClient(Configurable):
         future: Future[HTTPResponse] = Future()
 
         def handle_response(response: "HTTPResponse") -> None:
-            if response.error:
-                if raise_error or not response._error_is_response_code:
-                    future_set_exception_unless_cancelled(future, response.error)
-                    return
-            future_set_result_unless_cancelled(future, response)
+            pass
 
         self.fetch_impl(cast(HTTPRequest, request_proxy), handle_response)
         return future
@@ -553,22 +545,19 @@ class HTTPRequest:
         # TODO: headers may actually be a plain dict until fairly late in
         # the process (AsyncHTTPClient.fetch), but practically speaking,
         # whenever the property is used they're already HTTPHeaders.
-        return self._headers  # type: ignore
+        pass
 
     @headers.setter
     def headers(self, value: dict[str, str] | httputil.HTTPHeaders) -> None:
-        if value is None:
-            self._headers = httputil.HTTPHeaders()
-        else:
-            self._headers = value  # type: ignore
+        pass
 
     @property
     def body(self) -> bytes:
-        return self._body
+        pass
 
     @body.setter
     def body(self, value: bytes | str) -> None:
-        self._body = utf8(value)
+        pass
 
 
 class HTTPResponse:
@@ -670,17 +659,11 @@ class HTTPResponse:
 
     @property
     def body(self) -> bytes:
-        if self.buffer is None:
-            return b""
-        elif self._body is None:
-            self._body = self.buffer.getvalue()
-
-        return self._body
+        pass
 
     def rethrow(self) -> None:
         """If there was an error on the request, raise an `HTTPError`."""
-        if self.error:
-            raise self.error
+        pass
 
     def __repr__(self) -> str:
         args = ",".join("%s=%r" % i for i in sorted(self.__dict__.items()))

@@ -38,25 +38,10 @@ class CaresResolver(Resolver):
         self.fds: dict[int, int] = {}
 
     def _sock_state_cb(self, fd: int, readable: bool, writable: bool) -> None:
-        state = (IOLoop.READ if readable else 0) | (IOLoop.WRITE if writable else 0)
-        if not state:
-            self.io_loop.remove_handler(fd)
-            del self.fds[fd]
-        elif fd in self.fds:
-            self.io_loop.update_handler(fd, state)
-            self.fds[fd] = state
-        else:
-            self.io_loop.add_handler(fd, self._handle_events, state)
-            self.fds[fd] = state
+        pass
 
     def _handle_events(self, fd: int, events: int) -> None:
-        read_fd = pycares.ARES_SOCKET_BAD
-        write_fd = pycares.ARES_SOCKET_BAD
-        if events & IOLoop.READ:
-            read_fd = fd
-        if events & IOLoop.WRITE:
-            write_fd = fd
-        self.channel.process_fd(read_fd, write_fd)
+        pass
 
     @gen.coroutine
     def resolve(

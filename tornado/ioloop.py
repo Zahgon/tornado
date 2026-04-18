@@ -193,7 +193,7 @@ class IOLoop(Configurable):
 
         .. deprecated:: 5.0
         """
-        return IOLoop.current()
+        pass
 
     def install(self) -> None:
         """Deprecated alias for `make_current()`.
@@ -207,7 +207,7 @@ class IOLoop(Configurable):
 
         .. deprecated:: 5.0
         """
-        self.make_current()
+        pass
 
     @staticmethod
     def clear_instance() -> None:
@@ -223,7 +223,7 @@ class IOLoop(Configurable):
         .. deprecated:: 5.0
 
         """
-        IOLoop.clear_current()
+        pass
 
     @typing.overload
     @staticmethod
@@ -300,12 +300,7 @@ class IOLoop(Configurable):
            Setting and clearing the current event loop through Tornado is
            deprecated. Use ``asyncio.set_event_loop`` instead if you need this.
         """
-        warnings.warn(
-            "make_current is deprecated; start the event loop first",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self._make_current()
+        pass
 
     def _make_current(self) -> None:
         # The asyncio event loops override this method.
@@ -321,12 +316,7 @@ class IOLoop(Configurable):
            This method also clears the current `asyncio` event loop.
         .. deprecated:: 6.2
         """
-        warnings.warn(
-            "clear_current is deprecated",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        IOLoop._clear_current()
+        pass
 
     @staticmethod
     def _clear_current() -> None:
@@ -347,9 +337,7 @@ class IOLoop(Configurable):
 
     @classmethod
     def configurable_default(cls) -> type[Configurable]:
-        from tornado.platform.asyncio import AsyncIOLoop
-
-        return AsyncIOLoop
+        pass
 
     def initialize(self, make_current: bool = True) -> None:
         if make_current:
@@ -517,14 +505,7 @@ class IOLoop(Configurable):
 
             def timeout_callback() -> None:
                 # signal that timeout is triggered
-                future_cell["timeout_called"] = True
-                # If we can cancel the future, do so and wait on it. If not,
-                # Just stop the loop and return with the task still pending.
-                # (If we neither cancel nor wait for the task, a warning
-                # will be logged).
-                assert future_cell["future"] is not None
-                if not future_cell["future"].cancel():
-                    self.stop()
+                pass
 
             timeout_handle = self.add_timeout(self.time() + timeout, timeout_callback)
         self.start()
@@ -739,7 +720,7 @@ class IOLoop(Configurable):
 
         .. versionadded:: 5.0
         """
-        self._executor = executor
+        pass
 
     def _run_callback(self, callback: Callable[[], Any]) -> None:
         """Runs a callback with error handling.
@@ -773,7 +754,7 @@ class IOLoop(Configurable):
 
     def _discard_future_result(self, future: Future) -> None:
         """Avoid unhandled-exception warnings from spawned coroutines."""
-        future.result()
+        pass
 
     def split_fd(self, fd: int | _Selectable) -> tuple[int, int | _Selectable]:
         # """Returns an (fd, obj) pair from an ``fd`` parameter.
@@ -928,19 +909,10 @@ class PeriodicCallback:
 
         .. versionadded:: 4.1
         """
-        return self._running
+        pass
 
     async def _run(self) -> None:
-        if not self._running:
-            return
-        try:
-            val = self.callback()
-            if val is not None and isawaitable(val):
-                await val
-        except Exception:
-            app_log.error("Exception in callback %r", self.callback, exc_info=True)
-        finally:
-            self._schedule_next()
+        pass
 
     def _schedule_next(self) -> None:
         if self._running:

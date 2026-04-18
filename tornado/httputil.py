@@ -216,8 +216,7 @@ class HTTPHeaders(collections.abc.MutableMapping[str, str]):
 
     def get_list(self, name: str) -> list[str]:
         """Returns all values for the given header as a list."""
-        norm_name = _normalize_header(name)
-        return self._as_list.get(norm_name, [])
+        pass
 
     def get_all(self) -> Iterable[tuple[str, str]]:
         """Returns an iterable of all (name, value) pairs.
@@ -547,23 +546,7 @@ class HTTPServerRequest:
     @property
     def cookies(self) -> dict[str, http.cookies.Morsel]:
         """A dictionary of ``http.cookies.Morsel`` objects."""
-        if not hasattr(self, "_cookies"):
-            self._cookies: http.cookies.SimpleCookie = http.cookies.SimpleCookie()
-            if "Cookie" in self.headers:
-                try:
-                    parsed = parse_cookie(self.headers["Cookie"])
-                except Exception:
-                    pass
-                else:
-                    for k, v in parsed.items():
-                        try:
-                            self._cookies[k] = v
-                        except Exception:
-                            # SimpleCookie imposes some restrictions on keys;
-                            # parse_cookie does not. Discard any cookies
-                            # with disallowed keys.
-                            pass
-        return self._cookies
+        pass
 
     def full_url(self) -> str:
         """Reconstructs the full URL for this request."""
@@ -595,15 +578,7 @@ class HTTPServerRequest:
         details.
         http://docs.python.org/library/ssl.html#sslsocket-objects
         """
-        try:
-            if self.connection is None:
-                return None
-            # TODO: add a method to HTTPConnection for this so it can work with HTTP/2
-            return self.connection.stream.socket.getpeercert(  # type: ignore
-                binary_form=binary_form
-            )
-        except SSLError:
-            return None
+        pass
 
     def _parse_body(self) -> None:
         parse_body_arguments(
@@ -969,8 +944,7 @@ def set_parse_body_config(config: ParseBodyConfig) -> None:
 
     .. versionadded:: 6.5.5
     """
-    global _DEFAULT_PARSE_BODY_CONFIG
-    _DEFAULT_PARSE_BODY_CONFIG = config
+    pass
 
 
 def parse_body_arguments(
@@ -1274,9 +1248,7 @@ def encode_username_password(username: str | bytes, password: str | bytes) -> by
 
 
 def doctests() -> unittest.TestSuite:
-    import doctest
-
-    return doctest.DocTestSuite(optionflags=doctest.ELLIPSIS)
+    pass
 
 
 _netloc_re = re.compile(r"^(.+):(\d+)$")
@@ -1313,10 +1285,7 @@ _unquote_sub = re.compile(r"\\(?:([0-3][0-7][0-7])|(.))").sub
 
 
 def _unquote_replace(m: re.Match) -> str:
-    if m[1]:
-        return chr(int(m[1], 8))
-    else:
-        return m[2]
+    pass
 
 
 def _unquote_cookie(s: str) -> str:

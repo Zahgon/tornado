@@ -50,8 +50,7 @@ if typing.TYPE_CHECKING:
 # This function is like those in the tornado.escape module, but defined
 # here to minimize the temptation to use it in non-wsgi contexts.
 def to_wsgi_str(s: bytes) -> str:
-    assert isinstance(s, bytes)
-    return s.decode("latin1")
+    pass
 
 
 class WSGIContainer:
@@ -132,75 +131,7 @@ class WSGIContainer:
         IOLoop.current().spawn_callback(self.handle_request, request)
 
     async def handle_request(self, request: httputil.HTTPServerRequest) -> None:
-        data: dict[str, Any] = {}
-        response: list[bytes] = []
-
-        def start_response(
-            status: str,
-            headers: list[tuple[str, str]],
-            exc_info: None | (
-                tuple[
-                    type[BaseException] | None,
-                    BaseException | None,
-                    TracebackType | None,
-                ]
-            ) = None,
-        ) -> Callable[[bytes], Any]:
-            data["status"] = status
-            data["headers"] = headers
-            return response.append
-
-        loop = IOLoop.current()
-        app_response = await loop.run_in_executor(
-            self.executor,
-            self.wsgi_application,
-            self.environ(request),
-            start_response,
-        )
-        try:
-            app_response_iter = iter(app_response)
-
-            def next_chunk() -> bytes | None:
-                try:
-                    return next(app_response_iter)
-                except StopIteration:
-                    # StopIteration is special and is not allowed to pass through
-                    # coroutines normally.
-                    return None
-
-            while True:
-                chunk = await loop.run_in_executor(self.executor, next_chunk)
-                if chunk is None:
-                    break
-                response.append(chunk)
-        finally:
-            if hasattr(app_response, "close"):
-                app_response.close()  # type: ignore
-        body = b"".join(response)
-        if not data:
-            raise Exception("WSGI app did not call start_response")
-
-        status_code_str, reason = data["status"].split(" ", 1)
-        status_code = int(status_code_str)
-        headers: list[tuple[str, str]] = data["headers"]
-        header_set = {k.lower() for (k, v) in headers}
-        body = escape.utf8(body)
-        if status_code != 304:
-            if "content-length" not in header_set:
-                headers.append(("Content-Length", str(len(body))))
-            if "content-type" not in header_set:
-                headers.append(("Content-Type", "text/html; charset=UTF-8"))
-        if "server" not in header_set:
-            headers.append(("Server", "TornadoServer/%s" % tornado.version))
-
-        start_line = httputil.ResponseStartLine("HTTP/1.1", status_code, reason)
-        header_obj = httputil.HTTPHeaders()
-        for key, value in headers:
-            header_obj.add(key, value)
-        assert request.connection is not None
-        request.connection.write_headers(start_line, header_obj, chunk=body)
-        request.connection.finish()
-        self._log(status_code, request)
+        pass
 
     def environ(self, request: httputil.HTTPServerRequest) -> dict[str, Any]:
         """Converts a `tornado.httputil.HTTPServerRequest` to a WSGI environment.
@@ -208,39 +139,7 @@ class WSGIContainer:
         .. versionchanged:: 6.3
            No longer a static method.
         """
-        hostport = request.host.split(":")
-        if len(hostport) == 2:
-            host = hostport[0]
-            port = int(hostport[1])
-        else:
-            host = request.host
-            port = 443 if request.protocol == "https" else 80
-        environ = {
-            "REQUEST_METHOD": request.method,
-            "SCRIPT_NAME": "",
-            "PATH_INFO": to_wsgi_str(
-                escape.url_unescape(request.path, encoding=None, plus=False)
-            ),
-            "QUERY_STRING": request.query,
-            "REMOTE_ADDR": request.remote_ip,
-            "SERVER_NAME": host,
-            "SERVER_PORT": str(port),
-            "SERVER_PROTOCOL": request.version,
-            "wsgi.version": (1, 0),
-            "wsgi.url_scheme": request.protocol,
-            "wsgi.input": BytesIO(escape.utf8(request.body)),
-            "wsgi.errors": sys.stderr,
-            "wsgi.multithread": self.executor is not dummy_executor,
-            "wsgi.multiprocess": True,
-            "wsgi.run_once": False,
-        }
-        if "Content-Type" in request.headers:
-            environ["CONTENT_TYPE"] = request.headers.pop("Content-Type")
-        if "Content-Length" in request.headers:
-            environ["CONTENT_LENGTH"] = request.headers.pop("Content-Length")
-        for key, value in request.headers.items():
-            environ["HTTP_" + key.replace("-", "_").upper()] = value
-        return environ
+        pass
 
     def _log(self, status_code: int, request: httputil.HTTPServerRequest) -> None:
         if status_code < 400:

@@ -58,8 +58,7 @@ def _set_timeout(future: Future, timeout: None | float | datetime.timedelta) -> 
     if timeout:
 
         def on_timeout() -> None:
-            if not future.done():
-                future.set_exception(gen.TimeoutError())
+            pass
 
         io_loop = ioloop.IOLoop.current()
         timeout_handle = io_loop.add_timeout(timeout, on_timeout)
@@ -166,7 +165,7 @@ class Queue(Generic[_T]):
     @property
     def maxsize(self) -> int:
         """Number of items allowed in the queue."""
-        return self._maxsize
+        pass
 
     def qsize(self) -> int:
         """Number of items in the queue."""
@@ -279,11 +278,7 @@ class Queue(Generic[_T]):
 
         Raises `ValueError` if called more times than `.put`.
         """
-        if self._unfinished_tasks <= 0:
-            raise ValueError("task_done() called too many times")
-        self._unfinished_tasks -= 1
-        if self._unfinished_tasks == 0:
-            self._finished.set()
+        pass
 
     def join(
         self, timeout: float | datetime.timedelta | None = None

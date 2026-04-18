@@ -334,63 +334,7 @@ def linkify(
         extra_params = " " + extra_params.strip()
 
     def make_link(m: typing.Match) -> str:
-        url = m.group(1)
-        proto = m.group(2)
-        if require_protocol and not proto:
-            return url  # not protocol, no linkify
-
-        if proto and proto not in permitted_protocols:
-            return url  # bad protocol, no linkify
-
-        href = m.group(1)
-        if not proto:
-            href = "http://" + href  # no proto specified, use http
-
-        if callable(extra_params):
-            params = " " + extra_params(href).strip()
-        else:
-            params = extra_params
-
-        # clip long urls. max_len is just an approximation
-        max_len = 30
-        if shorten and len(url) > max_len:
-            before_clip = url
-            if proto:
-                proto_len = len(proto) + 1 + len(m.group(3) or "")  # +1 for :
-            else:
-                proto_len = 0
-
-            parts = url[proto_len:].split("/")
-            if len(parts) > 1:
-                # Grab the whole host part plus the first bit of the path
-                # The path is usually not that interesting once shortened
-                # (no more slug, etc), so it really just provides a little
-                # extra indication of shortening.
-                url = (
-                    url[:proto_len]
-                    + parts[0]
-                    + "/"
-                    + parts[1][:8].split("?")[0].split(".")[0]
-                )
-
-            if len(url) > max_len * 1.5:  # still too long
-                url = url[:max_len]
-
-            if url != before_clip:
-                amp = url.rfind("&")
-                # avoid splitting html char entities
-                if amp > max_len - 5:
-                    url = url[:amp]
-                url += "..."
-
-                if len(url) >= len(before_clip):
-                    url = before_clip
-                else:
-                    # full url is visible on mouse-over (for those who don't
-                    # have a status bar, such as Safari by default)
-                    params += ' title="%s"' % href
-
-        return f'<a href="{href}"{params}>{url}</a>'
+        pass
 
     # First HTML-escape so that our strings are all safe.
     # The regex is modified to avoid character entites other than &amp; so

@@ -154,7 +154,7 @@ def _create_future() -> Future:
 
 
 def _fake_ctx_run(f: Callable[..., _T], *args: Any, **kw: Any) -> _T:
-    return f(*args, **kw)
+    pass
 
 
 @overload
@@ -391,10 +391,7 @@ class WaitIterator:
         return self._running_future
 
     def _done_callback(self, done: Future) -> None:
-        if self._running_future and not self._running_future.done():
-            self._return_result(done)
-        else:
-            self._finished.append(done)
+        pass
 
     def _return_result(self, done: Future) -> Future:
         """Called set the returned future's state that of the future
@@ -565,12 +562,7 @@ def maybe_future(x: Any) -> Future:
        Instead of `maybe_future`, check for the non-future result types
        you expect (often just ``None``), and ``yield`` anything unknown.
     """
-    if is_future(x):
-        return x
-    else:
-        fut = _create_future()
-        fut.set_result(x)
-        return fut
+    pass
 
 
 def with_timeout(
@@ -621,21 +613,10 @@ def with_timeout(
     io_loop = IOLoop.current()
 
     def error_callback(future: Future) -> None:
-        try:
-            future.result()
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            if not isinstance(e, quiet_exceptions):
-                app_log.error(
-                    "Exception in Future %r after timeout", future, exc_info=True
-                )
+        pass
 
     def timeout_callback() -> None:
-        if not result.done():
-            result.set_exception(TimeoutError("Timeout"))
-        # In case the wrapped future goes on to fail, log it.
-        future_add_done_callback(future_converted, error_callback)
+        pass
 
     timeout_handle = io_loop.add_timeout(timeout, timeout_callback)
     if isinstance(future_converted, Future):
@@ -821,8 +802,7 @@ class Runner:
 
             def inner(f: Any) -> None:
                 # Break a reference cycle to speed GC.
-                f = None  # noqa: F841
-                self.ctx_run(self.run)
+                pass
 
             self.io_loop.add_future(self.future, inner)
             return False
@@ -831,13 +811,7 @@ class Runner:
     def handle_exception(
         self, typ: type[Exception], value: Exception, tb: types.TracebackType
     ) -> bool:
-        if not self.running and not self.finished:
-            self.future = Future()
-            future_set_exc_info(self.future, (typ, value, tb))
-            self.ctx_run(self.run)
-            return True
-        else:
-            return False
+        pass
 
 
 def _wrap_awaitable(awaitable: Awaitable) -> Future:

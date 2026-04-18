@@ -259,10 +259,7 @@ class Subprocess:
 
         Availability: Unix
         """
-        self._exit_callback = callback
-        Subprocess.initialize()
-        Subprocess._waiting[self.pid] = self
-        Subprocess._try_cleanup_process(self.pid)
+        pass
 
     def wait_for_exit(self, raise_error: bool = True) -> "Future[int]":
         """Returns a `.Future` which resolves when the process exits.
@@ -282,19 +279,7 @@ class Subprocess:
 
         Availability: Unix
         """
-        future: Future[int] = Future()
-
-        def callback(ret: int) -> None:
-            if ret != 0 and raise_error:
-                # Unfortunately we don't have the original args any more.
-                future_set_exception_unless_cancelled(
-                    future, CalledProcessError(ret, "unknown")
-                )
-            else:
-                future_set_result_unless_cancelled(future, ret)
-
-        self.set_exit_callback(callback)
-        return future
+        pass
 
     @classmethod
     def initialize(cls) -> None:
@@ -320,11 +305,7 @@ class Subprocess:
     @classmethod
     def uninitialize(cls) -> None:
         """Removes the ``SIGCHLD`` handler."""
-        if not cls._initialized:
-            return
-        loop = asyncio.get_event_loop()
-        loop.remove_signal_handler(signal.SIGCHLD)
-        cls._initialized = False
+        pass
 
     @classmethod
     def _cleanup(cls) -> None:
@@ -344,19 +325,4 @@ class Subprocess:
         subproc.io_loop.add_callback(subproc._set_returncode, status)
 
     def _set_returncode(self, status: int) -> None:
-        if sys.platform == "win32":
-            self.returncode = -1
-        else:
-            if os.WIFSIGNALED(status):
-                self.returncode = -os.WTERMSIG(status)
-            else:
-                assert os.WIFEXITED(status)
-                self.returncode = os.WEXITSTATUS(status)
-        # We've taken over wait() duty from the subprocess.Popen
-        # object. If we don't inform it of the process's return code,
-        # it will log a warning at destruction in python 3.6+.
-        self.proc.returncode = self.returncode
-        if self._exit_callback:
-            callback = self._exit_callback
-            self._exit_callback = None
-            callback(self.returncode)
+        pass

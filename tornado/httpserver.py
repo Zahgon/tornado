@@ -206,7 +206,7 @@ class HTTPServer(TCPServer, Configurable, httputil.HTTPServerConnectionDelegate)
 
     @classmethod
     def configurable_default(cls) -> type[Configurable]:
-        return HTTPServer
+        pass
 
     async def close_all_connections(self) -> None:
         """Close all open connections and asynchronously wait for them to finish.
@@ -222,18 +222,10 @@ class HTTPServer(TCPServer, Configurable, httputil.HTTPServerConnectionDelegate)
         Note that this method is a coroutine and must be called with ``await``.
 
         """
-        while self._connections:
-            # Peek at an arbitrary element of the set
-            conn = next(iter(self._connections))
-            await conn.close()
+        pass
 
     def handle_stream(self, stream: iostream.IOStream, address: tuple) -> None:
-        context = _HTTPRequestContext(
-            stream, address, self.protocol, self.trusted_downstream
-        )
-        conn = HTTP1ServerConnection(stream, self.conn_params, context)
-        self._connections.add(conn)
-        conn.start_serving(self)
+        pass
 
     def start_request(
         self, server_conn: object, request_conn: httputil.HTTPConnection

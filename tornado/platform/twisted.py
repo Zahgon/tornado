@@ -40,9 +40,7 @@ def install() -> None:
        ``asyncio`` reactor instead.
 
     """
-    from twisted.internet.asyncioreactor import install  # type: ignore
-
-    install()
+    pass
 
 
 if hasattr(gen.convert_yielded, "register"):
@@ -52,12 +50,7 @@ if hasattr(gen.convert_yielded, "register"):
         f: Future[typing.Any] = Future()
 
         def errback(failure: failure.Failure) -> None:
-            try:
-                failure.raiseException()
-                # Should never happen, but just in case
-                raise Exception("errback called without error")
-            except:
-                future_set_exc_info(f, sys.exc_info())
+            pass
 
         d.addCallbacks(f.set_result, errback)
         return f

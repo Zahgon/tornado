@@ -199,18 +199,14 @@ class OptionParser:
 
         .. versionadded:: 3.1
         """
-        return {
-            opt.name: opt.value()
-            for name, opt in self._options.items()
-            if not group or group == opt.group_name
-        }
+        pass
 
     def as_dict(self) -> dict[str, Any]:
         """The names and values of all options.
 
         .. versionadded:: 3.1
         """
-        return {opt.name: opt.value() for name, opt in self._options.items()}
+        pass
 
     def define(
         self,
@@ -404,30 +400,7 @@ class OptionParser:
            Added the ability to set options via strings in config files.
 
         """
-        config = {"__file__": os.path.abspath(path)}
-        with open(path, "rb") as f:
-            exec_in(native_str(f.read()), config, config)
-        for name in config:
-            normalized = self._normalize_name(name)
-            if normalized in self._options:
-                option = self._options[normalized]
-                if option.multiple:
-                    if not isinstance(config[name], (list, str)):
-                        raise Error(
-                            "Option %r is required to be a list of %s "
-                            "or a comma-separated string"
-                            % (option.name, option.type.__name__)
-                        )
-
-                if type(config[name]) is str and (
-                    option.type is not str or option.multiple
-                ):
-                    option.parse(config[name])
-                else:
-                    option.set(config[name])
-
-        if final:
-            self.run_parse_callbacks()
+        pass
 
     def print_help(self, file: TextIO | None = None) -> None:
         """Prints all the command line options to stderr (or another file)."""
@@ -460,9 +433,7 @@ class OptionParser:
         print(file=file)
 
     def _help_callback(self, value: bool) -> None:
-        if value:
-            self.print_help()
-            sys.exit(0)
+        pass
 
     def add_parse_callback(self, callback: Callable[[], None]) -> None:
         """Adds a parse callback, to be invoked when option parsing is done."""
@@ -483,7 +454,7 @@ class OptionParser:
             with mock.patch.object(options.mockable(), 'name', value):
                 assert options.name == value
         """
-        return _Mockable(self)
+        pass
 
 
 class _Mockable:
@@ -577,27 +548,7 @@ class _Option:
         return self.value()
 
     def set(self, value: Any) -> None:
-        if self.multiple:
-            if not isinstance(value, list):
-                raise Error(
-                    "Option %r is required to be a list of %s"
-                    % (self.name, self.type.__name__)
-                )
-            for item in value:
-                if item is not None and not isinstance(item, self.type):
-                    raise Error(
-                        "Option %r is required to be a list of %s"
-                        % (self.name, self.type.__name__)
-                    )
-        else:
-            if value is not None and not isinstance(value, self.type):
-                raise Error(
-                    "Option %r is required to be a %s (%s given)"
-                    % (self.name, self.type.__name__, type(value))
-                )
-        self._value = value
-        if self.callback is not None:
-            self.callback(self._value)
+        pass
 
     # Supported date/time formats in our options
     _DATETIME_FORMATS = [
@@ -614,12 +565,7 @@ class _Option:
     ]
 
     def _parse_datetime(self, value: str) -> datetime.datetime:
-        for format in self._DATETIME_FORMATS:
-            try:
-                return datetime.datetime.strptime(value, format)
-            except ValueError:
-                pass
-        raise Error("Unrecognized date/time format: %r" % value)
+        pass
 
     _TIMEDELTA_ABBREV_DICT = {
         "h": "hours",
@@ -640,28 +586,13 @@ class _Option:
     )
 
     def _parse_timedelta(self, value: str) -> datetime.timedelta:
-        try:
-            sum = datetime.timedelta()
-            start = 0
-            while start < len(value):
-                m = self._TIMEDELTA_PATTERN.match(value, start)
-                if not m:
-                    raise Exception()
-                num = float(m.group(1))
-                units = m.group(2) or "seconds"
-                units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
-
-                sum += datetime.timedelta(**{units: num})
-                start = m.end()
-            return sum
-        except Exception:
-            raise
+        pass
 
     def _parse_bool(self, value: str) -> bool:
-        return value.lower() not in ("false", "0", "f")
+        pass
 
     def _parse_string(self, value: str) -> str:
-        return _unicode(value)
+        pass
 
 
 options = OptionParser()
@@ -710,7 +641,7 @@ def parse_config_file(path: str, final: bool = True) -> None:
 
     See `OptionParser.parse_config_file`.
     """
-    return options.parse_config_file(path, final=final)
+    pass
 
 
 def print_help(file: TextIO | None = None) -> None:

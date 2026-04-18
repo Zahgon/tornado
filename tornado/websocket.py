@@ -288,7 +288,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
 
         Default: ``0``
         """
-        return self.settings.get("websocket_ping_interval", None)
+        pass
 
     @property
     def ping_timeout(self) -> float | None:
@@ -313,7 +313,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
            The ping timeout can no longer be configured longer than the
            ping interval.
         """
-        return self.settings.get("websocket_ping_timeout", None)
+        pass
 
     @property
     def max_message_size(self) -> int:
@@ -324,9 +324,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
 
         Default is 10MiB.
         """
-        return self.settings.get(
-            "websocket_max_message_size", _default_max_message_size
-        )
+        pass
 
     def write_message(
         self, message: bytes | str | dict[str, Any], binary: bool = False
@@ -389,8 +387,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
 
         .. versionadded:: 5.1
         """
-        assert self.ws_connection is not None
-        return self.ws_connection.selected_subprotocol
+        pass
 
     def get_compression_options(self) -> dict[str, Any] | None:
         """Override to return compression options for the connection.
@@ -461,10 +458,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
            The data argument is now optional.
 
         """
-        data = utf8(data)
-        if self.ws_connection is None or self.ws_connection.is_closing():
-            raise WebSocketClosedError()
-        self.ws_connection.write_ping(data)
+        pass
 
     def on_pong(self, data: bytes) -> None:
         """Invoked when the response to a ping frame is received."""
@@ -866,11 +860,11 @@ class WebSocketProtocol13(WebSocketProtocol):
     # Use a property for this to satisfy the abc.
     @property
     def selected_subprotocol(self) -> str | None:
-        return self._selected_subprotocol
+        pass
 
     @selected_subprotocol.setter
     def selected_subprotocol(self, value: str | None) -> None:
-        self._selected_subprotocol = value
+        pass
 
     async def accept_connection(self, handler: WebSocketHandler) -> None:
         try:
@@ -1310,27 +1304,11 @@ class WebSocketProtocol13(WebSocketProtocol):
 
     @property
     def ping_interval(self) -> float:
-        interval = self.params.ping_interval
-        if interval is not None:
-            return interval
-        return 0
+        pass
 
     @property
     def ping_timeout(self) -> float:
-        timeout = self.params.ping_timeout
-        if timeout is not None:
-            if self.ping_interval and timeout > self.ping_interval:
-                de_dupe_gen_log(
-                    # Note: using de_dupe_gen_log to prevent this message from
-                    # being duplicated for each connection
-                    logging.WARNING,
-                    f"The websocket_ping_timeout ({timeout}) cannot be longer"
-                    f" than the websocket_ping_interval ({self.ping_interval})."
-                    f"\nSetting websocket_ping_timeout={self.ping_interval}",
-                )
-                return self.ping_interval
-            return timeout
-        return self.ping_interval
+        pass
 
     def start_pinging(self) -> None:
         """Start sending periodic pings to keep the connection alive"""
@@ -1492,13 +1470,7 @@ class WebSocketClientConnection(simple_httpclient._HTTPConnection):
         self.on_connection_close()
 
     def _on_http_response(self, response: httpclient.HTTPResponse) -> None:
-        if not self.connect_future.done():
-            if response.error:
-                self.connect_future.set_exception(response.error)
-            else:
-                self.connect_future.set_exception(
-                    WebSocketError("Non-websocket response")
-                )
+        pass
 
     async def headers_received(
         self,
@@ -1560,14 +1532,10 @@ class WebSocketClientConnection(simple_httpclient._HTTPConnection):
         is given it will be called with the future when it is
         ready.
         """
-
-        awaitable = self.read_queue.get()
-        if callback is not None:
-            self.io_loop.add_future(asyncio.ensure_future(awaitable), callback)
-        return awaitable
+        pass
 
     def on_message(self, message: str | bytes) -> Awaitable[None] | None:
-        return self._on_message(message)
+        pass
 
     def _on_message(self, message: None | str | bytes) -> Awaitable[None] | None:
         if self._on_message_callback:
@@ -1590,10 +1558,7 @@ class WebSocketClientConnection(simple_httpclient._HTTPConnection):
         .. versionadded:: 5.1
 
         """
-        data = utf8(data)
-        if self.protocol is None:
-            raise WebSocketClosedError()
-        self.protocol.write_ping(data)
+        pass
 
     def on_pong(self, data: bytes) -> None:
         pass
@@ -1610,8 +1575,7 @@ class WebSocketClientConnection(simple_httpclient._HTTPConnection):
 
         .. versionadded:: 5.1
         """
-        assert self.protocol is not None
-        return self.protocol.selected_subprotocol
+        pass
 
     def log_exception(
         self,

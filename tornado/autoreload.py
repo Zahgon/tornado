@@ -155,85 +155,19 @@ def add_reload_hook(fn: Callable[[], None]) -> None:
     preferable to set the ``FD_CLOEXEC`` flag (using `fcntl` or
     `os.set_inheritable`) instead of using a reload hook to close them.
     """
-    _reload_hooks.append(fn)
+    pass
 
 
 def _reload_on_update(modify_times: dict[str, float]) -> None:
-    if _reload_attempted:
-        # We already tried to reload and it didn't work, so don't try again.
-        return
-    if process.task_id() is not None:
-        # We're in a child process created by fork_processes.  If child
-        # processes restarted themselves, they'd all restart and then
-        # all call fork_processes again.
-        return
-    for module in list(sys.modules.values()):
-        # Some modules play games with sys.modules (e.g. email/__init__.py
-        # in the standard library), and occasionally this can cause strange
-        # failures in getattr.  Just ignore anything that's not an ordinary
-        # module.
-        if not isinstance(module, types.ModuleType):
-            continue
-        path = getattr(module, "__file__", None)
-        if not path:
-            continue
-        if path.endswith(".pyc") or path.endswith(".pyo"):
-            path = path[:-1]
-        _check_file(modify_times, path)
-    for path in _watched_files:
-        _check_file(modify_times, path)
+    pass
 
 
 def _check_file(modify_times: dict[str, float], path: str) -> None:
-    try:
-        modified = os.stat(path).st_mtime
-    except Exception:
-        return
-    if path not in modify_times:
-        modify_times[path] = modified
-        return
-    if modify_times[path] != modified:
-        gen_log.info("%s modified; restarting server", path)
-        _reload()
+    pass
 
 
 def _reload() -> None:
-    global _reload_attempted
-    _reload_attempted = True
-    for fn in _reload_hooks:
-        fn()
-    if sys.platform != "win32":
-        # Clear the alarm signal set by
-        # ioloop.set_blocking_log_threshold so it doesn't fire
-        # after the exec.
-        signal.setitimer(signal.ITIMER_REAL, 0, 0)
-    # sys.path fixes: see comments at top of file.  If __main__.__spec__
-    # exists, we were invoked with -m and the effective path is about to
-    # change on re-exec.  Reconstruct the original command line to
-    # ensure that the new process sees the same path we did.
-    if _autoreload_is_main:
-        assert _original_argv is not None
-        spec = _original_spec
-        argv = _original_argv
-    else:
-        spec = getattr(sys.modules["__main__"], "__spec__", None)
-        argv = sys.argv
-    if spec and spec.name != "__main__":
-        # __spec__ is set in two cases: when running a module, and when running a directory. (when
-        # running a file, there is no spec). In the former case, we must pass -m to maintain the
-        # module-style behavior (setting sys.path), even though python stripped -m from its argv at
-        # startup. If sys.path is exactly __main__, we're running a directory and should fall
-        # through to the non-module behavior.
-        #
-        # Some of this, including the use of exactly __main__ as a spec for directory mode,
-        # is documented at https://docs.python.org/3/library/runpy.html#runpy.run_path
-        argv = ["-m", spec.name] + argv[1:]
-
-    if not _has_execv:
-        subprocess.Popen([sys.executable] + argv)
-        os._exit(0)
-    else:
-        os.execv(sys.executable, [sys.executable] + argv)
+    pass
 
 
 _USAGE = """

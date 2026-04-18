@@ -125,9 +125,7 @@ class Condition(_TimeoutGarbageCollector):
         if timeout:
 
             def on_timeout() -> None:
-                if not waiter.done():
-                    future_set_result_unless_cancelled(waiter, False)
-                self._garbage_collect()
+                pass
 
             io_loop = ioloop.IOLoop.current()
             timeout_handle = io_loop.add_timeout(timeout, on_timeout)
@@ -148,7 +146,7 @@ class Condition(_TimeoutGarbageCollector):
 
     def notify_all(self) -> None:
         """Wake all waiters."""
-        self.notify(len(self._waiters))
+        pass
 
 
 class Event:
@@ -210,12 +208,7 @@ class Event:
 
         Calling `.wait` once the flag is set will not block.
         """
-        if not self._value:
-            self._value = True
-
-            for fut in self._waiters:
-                if not fut.done():
-                    fut.set_result(None)
+        pass
 
     def clear(self) -> None:
         """Reset the internal flag to ``False``.
@@ -424,9 +417,7 @@ class Semaphore(_TimeoutGarbageCollector):
             if timeout:
 
                 def on_timeout() -> None:
-                    if not waiter.done():
-                        waiter.set_exception(gen.TimeoutError())
-                    self._garbage_collect()
+                    pass
 
                 io_loop = ioloop.IOLoop.current()
                 timeout_handle = io_loop.add_timeout(timeout, on_timeout)

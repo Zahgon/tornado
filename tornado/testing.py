@@ -141,66 +141,14 @@ class AsyncTestCase(unittest.TestCase):
         self._test_generator: Generator | Coroutine | None = None
 
     def setUp(self) -> None:
-        py_ver = sys.version_info
-        if ((3, 10, 0) <= py_ver < (3, 10, 9)) or ((3, 11, 0) <= py_ver <= (3, 11, 1)):
-            # Early releases in the Python 3.10 and 3.1 series had deprecation
-            # warnings that were later reverted; we must suppress them here.
-            setup_with_context_manager(self, warnings.catch_warnings())
-            warnings.filterwarnings(
-                "ignore",
-                message="There is no current event loop",
-                category=DeprecationWarning,
-                module=r"tornado\..*",
-            )
-        super().setUp()
-        if type(self).get_new_ioloop is not AsyncTestCase.get_new_ioloop:
-            warnings.warn("get_new_ioloop is deprecated", DeprecationWarning)
-        self.io_loop = self.get_new_ioloop()
-        asyncio.set_event_loop(self.io_loop.asyncio_loop)  # type: ignore[attr-defined]
+        pass
 
     def tearDown(self) -> None:
         # Native coroutines tend to produce warnings if they're not
         # allowed to run to completion. It's difficult to ensure that
         # this always happens in tests, so cancel any tasks that are
         # still pending by the time we get here.
-        asyncio_loop = self.io_loop.asyncio_loop  # type: ignore
-        tasks = asyncio.all_tasks(asyncio_loop)
-        # Tasks that are done may still appear here and may contain
-        # non-cancellation exceptions, so filter them out.
-        tasks = [t for t in tasks if not t.done()]  # type: ignore
-        for t in tasks:
-            t.cancel()
-        # Allow the tasks to run and finalize themselves (which means
-        # raising a CancelledError inside the coroutine). This may
-        # just transform the "task was destroyed but it is pending"
-        # warning into a "uncaught CancelledError" warning, but
-        # catching CancelledErrors in coroutines that may leak is
-        # simpler than ensuring that no coroutines leak.
-        if tasks:
-            done, pending = self.io_loop.run_sync(lambda: asyncio.wait(tasks))
-            assert not pending
-            # If any task failed with anything but a CancelledError, raise it.
-            for f in done:
-                try:
-                    f.result()
-                except asyncio.CancelledError:
-                    pass
-
-        # Clean up Subprocess, so it can be used again with a new ioloop.
-        Subprocess.uninitialize()
-        asyncio.set_event_loop(None)
-        if not isinstance(self.io_loop, _NON_OWNED_IOLOOPS):
-            # Try to clean up any file descriptors left open in the ioloop.
-            # This avoids leaks, especially when tests are run repeatedly
-            # in the same process with autoreload (because curl does not
-            # set FD_CLOEXEC on its file descriptors)
-            self.io_loop.close(all_fds=True)
-        super().tearDown()
-        # In case an exception escaped or the StackContext caught an exception
-        # when there wasn't a wait() to re-raise it, do so here.
-        # This is our last chance to raise an exception in a way that the
-        # unittest machinery understands.
-        self.__rethrow()
+        pass
 
     def get_new_ioloop(self) -> IOLoop:
         """Returns the `.IOLoop` to use for this test.
@@ -216,7 +164,7 @@ class AsyncTestCase(unittest.TestCase):
         .. deprecated:: 6.3
            This method will be removed in Tornado 7.0.
         """
-        return IOLoop(make_current=False)
+        pass
 
     def _handle_exception(
         self, typ: type[Exception], value: Exception, tb: TracebackType
@@ -260,16 +208,7 @@ class AsyncTestCase(unittest.TestCase):
         present in all supported versions of Python (3.8+), and if it goes away in the future that's
         OK because we can just remove this override as noted above.
         """
-        # Calling super()._callTestMethod would hide the return value, even in python 3.8-3.10
-        # where the check isn't being done for us.
-        result = method()
-        if isinstance(result, Generator) or inspect.iscoroutine(result):
-            raise TypeError(
-                "Generator and coroutine test methods should be"
-                " decorated with tornado.testing.gen_test"
-            )
-        elif result is not None:
-            raise ValueError("Return value from test method ignored: %r" % result)
+        pass
 
     def stop(self, _arg: Any = None, **kwargs: Any) -> None:
         """Stops the `.IOLoop`, causing one pending (or future) call to `wait()`
@@ -318,13 +257,7 @@ class AsyncTestCase(unittest.TestCase):
             if timeout:
 
                 def timeout_func() -> None:
-                    try:
-                        raise self.failureException(
-                            "Async operation timed out after %s seconds" % timeout
-                        )
-                    except Exception:
-                        self.__failure = sys.exc_info()
-                    self.stop()
+                    pass
 
                 self.__timeout = self.io_loop.add_timeout(
                     self.io_loop.time() + timeout, timeout_func
@@ -379,20 +312,13 @@ class AsyncHTTPTestCase(AsyncTestCase):
     """
 
     def setUp(self) -> None:
-        super().setUp()
-        sock, port = bind_unused_port()
-        self.__port = port
-
-        self.http_client = self.get_http_client()
-        self._app = self.get_app()
-        self.http_server = self.get_http_server()
-        self.http_server.add_sockets([sock])
+        pass
 
     def get_http_client(self) -> AsyncHTTPClient:
-        return AsyncHTTPClient()
+        pass
 
     def get_http_server(self) -> HTTPServer:
-        return HTTPServer(self._app, **self.get_httpserver_options())
+        pass
 
     def get_app(self) -> Application:
         """Should be overridden by subclasses to return a
@@ -449,7 +375,7 @@ class AsyncHTTPTestCase(AsyncTestCase):
         """May be overridden by subclasses to return additional
         keyword arguments for the server.
         """
-        return {}
+        pass
 
     def get_http_port(self) -> int:
         """Returns the port used by the server.
@@ -466,14 +392,7 @@ class AsyncHTTPTestCase(AsyncTestCase):
         return f"{self.get_protocol()}://127.0.0.1:{self.get_http_port()}{path}"
 
     def tearDown(self) -> None:
-        self.http_server.stop()
-        self.io_loop.run_sync(
-            self.http_server.close_all_connections, timeout=get_async_test_timeout()
-        )
-        self.http_client.close()
-        del self.http_server
-        del self._app
-        super().tearDown()
+        pass
 
 
 class AsyncHTTPSTestCase(AsyncHTTPTestCase):
@@ -483,17 +402,17 @@ class AsyncHTTPSTestCase(AsyncHTTPTestCase):
     """
 
     def get_http_client(self) -> AsyncHTTPClient:
-        return AsyncHTTPClient(force_instance=True, defaults=dict(validate_cert=False))
+        pass
 
     def get_httpserver_options(self) -> dict[str, Any]:
-        return dict(ssl_options=self.get_ssl_options())
+        pass
 
     def get_ssl_options(self) -> dict[str, Any]:
         """May be overridden by subclasses to select SSL options.
 
         By default includes a self-signed testing certificate.
         """
-        return AsyncHTTPSTestCase.default_ssl_options()
+        pass
 
     @staticmethod
     def default_ssl_options() -> dict[str, Any]:
@@ -502,11 +421,7 @@ class AsyncHTTPSTestCase(AsyncHTTPTestCase):
         #     -out tornado/test/test.crt \
         #     -nodes -days 3650 -x509 \
         #     -subj "/CN=foo.example.com" -addext "subjectAltName = DNS:foo.example.com"
-        module_dir = os.path.dirname(__file__)
-        return dict(
-            certfile=os.path.join(module_dir, "test", "test.crt"),
-            keyfile=os.path.join(module_dir, "test", "test.key"),
-        )
+        pass
 
     def get_protocol(self) -> str:
         return "https"
@@ -583,12 +498,7 @@ def gen_test(
             self: AsyncTestCase, *args: Any, **kwargs: Any
         ) -> Generator | Coroutine:
             # Type comments used to avoid pypy3 bug.
-            result = f(self, *args, **kwargs)
-            if isinstance(result, Generator) or inspect.iscoroutine(result):
-                self._test_generator = result
-            else:
-                self._test_generator = None
-            return result
+            pass
 
         if inspect.iscoroutinefunction(f):
             coro = pre_coroutine
@@ -597,26 +507,7 @@ def gen_test(
 
         @functools.wraps(coro)
         def post_coroutine(self: AsyncTestCase, *args: Any, **kwargs: Any) -> None:
-            try:
-                return self.io_loop.run_sync(
-                    functools.partial(coro, self, *args, **kwargs), timeout=timeout
-                )
-            except TimeoutError as e:
-                # run_sync raises an error with an unhelpful traceback.
-                # If the underlying generator is still running, we can throw the
-                # exception back into it so the stack trace is replaced by the
-                # point where the test is stopped. The only reason the generator
-                # would not be running would be if it were cancelled, which means
-                # a native coroutine, so we can rely on the cr_running attribute.
-                if self._test_generator is not None and getattr(
-                    self._test_generator, "cr_running", True
-                ):
-                    self._test_generator.throw(e)
-                    # In case the test contains an overly broad except
-                    # clause, we may get back here.
-                # Coroutine was stopped or didn't raise a useful stack trace,
-                # so re-raise the original exception which is better than nothing.
-                raise
+            pass
 
         return post_coroutine
 
@@ -699,26 +590,7 @@ class ExpectLog(logging.Filter):
         self.orig_level: int | None = None
 
     def filter(self, record: logging.LogRecord) -> bool:
-        if record.exc_info:
-            self.logged_stack = True
-        message = record.getMessage()
-        if self.regex.match(message):
-            if self.level is None and record.levelno < logging.WARNING:
-                # We're inside the logging machinery here so generating a DeprecationWarning
-                # here won't be reported cleanly (if warnings-as-errors is enabled, the error
-                # just gets swallowed by the logging module), and even if it were it would
-                # have the wrong stack trace. Just remember this fact and report it in
-                # __exit__ instead.
-                self.deprecated_level_matched += 1
-            if self.level is not None and record.levelno != self.level:
-                app_log.warning(
-                    "Got expected log message %r at unexpected level (%s vs %s)"
-                    % (message, logging.getLevelName(self.level), record.levelname)
-                )
-                return True
-            self.matched += 1
-            return False
-        return True
+        pass
 
     def __enter__(self) -> "ExpectLog":
         if self.level is not None and self.level < self.logger.getEffectiveLevel():

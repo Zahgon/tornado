@@ -87,7 +87,7 @@ class GzipDecompressor:
     @property
     def unconsumed_tail(self) -> bytes:
         """Returns the unconsumed portion left over"""
-        return self.decompressobj.unconsumed_tail
+        pass
 
     def flush(self) -> bytes:
         """Return any remaining buffered data not yet returned by decompress.
@@ -173,10 +173,7 @@ _alphanum = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234
 
 
 def _re_unescape_replacement(match: Match[str]) -> str:
-    group = match.group(1)
-    if group[0] in _alphanum:
-        raise ValueError("cannot unescape '\\\\%s'" % group[0])
-    return group
+    pass
 
 
 _re_unescape_pattern = re.compile(r"\\(.)", re.DOTALL)
@@ -315,16 +312,13 @@ class Configurable:
     def _save_configuration(
         cls,
     ) -> tuple[type[Configurable] | None, dict[str, Any] | None]:
-        base = cls.configurable_base()
-        return (base.__impl_class, base.__impl_kwargs)
+        pass
 
     @classmethod
     def _restore_configuration(
         cls, saved: tuple[type[Configurable] | None, dict[str, Any] | None]
     ) -> None:
-        base = cls.configurable_base()
-        base.__impl_class = saved[0]
-        base.__impl_kwargs = saved[1]
+        pass
 
 
 class ArgReplacer:
@@ -365,10 +359,7 @@ class ArgReplacer:
 
         Returns ``default`` if the argument is not present.
         """
-        if self.arg_pos is not None and len(args) > self.arg_pos:
-            return args[self.arg_pos]
-        else:
-            return kwargs.get(self.name, default)
+        pass
 
     def replace(
         self, new_value: Any, args: Sequence[Any], kwargs: dict[str, Any]
@@ -408,11 +399,7 @@ def _websocket_mask_python(mask: bytes, data: bytes) -> bytes:
 
     This pure-python implementation may be replaced by an optimized version when available.
     """
-    mask_arr = array.array("B", mask)
-    unmasked_arr = array.array("B", data)
-    for i in range(len(data)):
-        unmasked_arr[i] = unmasked_arr[i] ^ mask_arr[i % 4]
-    return unmasked_arr.tobytes()
+    pass
 
 
 if os.environ.get("TORNADO_NO_EXTENSION") or os.environ.get("TORNADO_EXTENSION") == "0":
@@ -429,6 +416,4 @@ else:
 
 
 def doctests() -> unittest.TestSuite:
-    import doctest
-
-    return doctest.DocTestSuite()
+    pass

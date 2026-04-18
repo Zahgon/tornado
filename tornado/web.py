@@ -251,7 +251,7 @@ class RequestHandler:
     @property
     def settings(self) -> dict[str, Any]:
         """An alias for `self.application.settings <Application.settings>`."""
-        return self.application.settings
+        pass
 
     def _unimplemented_method(self, *args: str, **kwargs: str) -> None:
         raise HTTPError(405)
@@ -505,7 +505,7 @@ class RequestHandler:
 
         .. versionadded:: 3.2
         """
-        return self._get_argument(name, default, self.request.body_arguments, strip)
+        pass
 
     def get_body_arguments(self, name: str, strip: bool = True) -> list[str]:
         """Returns a list of the body arguments with the given name.
@@ -549,7 +549,7 @@ class RequestHandler:
 
         .. versionadded:: 3.2
         """
-        return self._get_argument(name, default, self.request.query_arguments, strip)
+        pass
 
     def get_query_arguments(self, name: str, strip: bool = True) -> list[str]:
         """Returns a list of the query arguments with the given name.
@@ -613,7 +613,7 @@ class RequestHandler:
     def cookies(self) -> dict[str, http.cookies.Morsel]:
         """An alias for
         `self.request.cookies <.httputil.HTTPServerRequest.cookies>`."""
-        return self.request.cookies
+        pass
 
     @overload
     def get_cookie(self, name: str, default: str) -> str:
@@ -836,12 +836,7 @@ class RequestHandler:
            avoid confusion with other uses of "secure" in cookie attributes
            and prefixes. The old name remains as an alias.
         """
-        self.set_cookie(
-            name,
-            self.create_signed_value(name, value, version=version),
-            expires_days=expires_days,
-            **kwargs,
-        )
+        pass
 
     set_secure_cookie = set_signed_cookie
 
@@ -927,12 +922,7 @@ class RequestHandler:
            remains as an alias.
 
         """
-        self.require_setting("cookie_secret", "secure cookies")
-        if value is None:
-            value = self.get_cookie(name)
-        if value is None:
-            return None
-        return get_signature_key_version(value)
+        pass
 
     get_secure_cookie_key_version = get_signed_cookie_key_version
 
@@ -1483,20 +1473,18 @@ class RequestHandler:
 
         The user object may be any type of the application's choosing.
         """
-        if not hasattr(self, "_current_user"):
-            self._current_user = self.get_current_user()
-        return self._current_user
+        pass
 
     @current_user.setter
     def current_user(self, value: Any) -> None:
-        self._current_user = value
+        pass
 
     def get_current_user(self) -> Any:
         """Override to determine the current user from, e.g., a cookie.
 
         This method may not be a coroutine.
         """
-        return None
+        pass
 
     def get_login_url(self) -> str:
         """Override to customize the login URL based on the request.
@@ -1547,30 +1535,7 @@ class RequestHandler:
            will set the ``secure`` and ``httponly`` flags on the
            ``_xsrf`` cookie.
         """
-        if not hasattr(self, "_xsrf_token"):
-            version, token, timestamp = self._get_raw_xsrf_token()
-            output_version = self.settings.get("xsrf_cookie_version", 2)
-            cookie_kwargs = self.settings.get("xsrf_cookie_kwargs", {})
-            if output_version == 1:
-                self._xsrf_token = binascii.b2a_hex(token)
-            elif output_version == 2:
-                mask = os.urandom(4)
-                self._xsrf_token = b"|".join(
-                    [
-                        b"2",
-                        binascii.b2a_hex(mask),
-                        binascii.b2a_hex(_websocket_mask(mask, token)),
-                        utf8(str(int(timestamp))),
-                    ]
-                )
-            else:
-                raise ValueError("unknown xsrf cookie version %d", output_version)
-            if version is None:
-                if self.current_user and "expires_days" not in cookie_kwargs:
-                    cookie_kwargs["expires_days"] = 30
-                cookie_name = self.settings.get("xsrf_cookie_name", "_xsrf")
-                self.set_cookie(cookie_name, self._xsrf_token, **cookie_kwargs)
-        return self._xsrf_token
+        pass
 
     def _get_raw_xsrf_token(self) -> tuple[int | None, bytes, float]:
         """Read or generate the xsrf token in its raw form.
@@ -1952,15 +1917,7 @@ class RequestHandler:
             )
 
     def _ui_module(self, name: str, module: type["UIModule"]) -> Callable[..., str]:
-        def render(*args, **kwargs) -> str:  # type: ignore
-            if not hasattr(self, "_active_modules"):
-                self._active_modules: dict[str, UIModule] = {}
-            if name not in self._active_modules:
-                self._active_modules[name] = module(self)
-            rendered = self._active_modules[name].render(*args, **kwargs)
-            return _unicode(rendered)
-
-        return render
+        pass
 
     def _ui_method(self, method: Callable[..., str]) -> Callable[..., str]:
         return lambda *args, **kwargs: method(self, *args, **kwargs)
@@ -2307,7 +2264,7 @@ class Application(ReversibleRouter):
             )
 
     def add_transform(self, transform_class: type["OutputTransform"]) -> None:
-        self.transforms.append(transform_class)
+        pass
 
     def _load_ui_methods(self, methods: Any) -> None:
         if isinstance(methods, types.ModuleType):
@@ -2555,9 +2512,7 @@ class HTTPError(Exception):
         """
         A backwards compatible way of accessing log_message.
         """
-        if self._log_message and not self.args:
-            return self._log_message.replace("%", "%%")
-        return self._log_message
+        pass
 
     def get_message(self) -> str | None:
         if self._log_message and self.args:
@@ -2764,7 +2719,7 @@ class StaticFileHandler(RequestHandler):
             cls._static_hashes = {}
 
     def head(self, path: str) -> Awaitable[None]:
-        return self.get(path, include_body=False)
+        pass
 
     async def get(self, path: str, include_body: bool = True) -> None:
         # Set up our path instance variables.
@@ -3156,15 +3111,7 @@ class StaticFileHandler(RequestHandler):
         file corresponding to the given ``path``.
 
         """
-        url = settings.get("static_url_prefix", "/static/") + path
-        if not include_version:
-            return url
-
-        version_hash = cls.get_version(settings, path)
-        if not version_hash:
-            return url
-
-        return f"{url}?v={version_hash}"
+        pass
 
     def parse_url_path(self, url_path: str) -> str:
         """Converts a static URL path into a filesystem path.
@@ -3408,7 +3355,7 @@ class UIModule:
 
     @property
     def current_user(self) -> Any:
-        return self.handler.current_user
+        pass
 
     def render(self, *args: Any, **kwargs: Any) -> str | bytes:
         """Override in subclasses to return this module's output."""
@@ -3491,16 +3438,7 @@ class TemplateModule(UIModule):
 
     def render(self, path: str, **kwargs: Any) -> bytes:
         def set_resources(**kwargs) -> str:  # type: ignore
-            if path not in self._resource_dict:
-                self._resource_list.append(kwargs)
-                self._resource_dict[path] = kwargs
-            else:
-                if self._resource_dict[path] != kwargs:
-                    raise ValueError(
-                        "set_resources called with different "
-                        "resources for the same template"
-                    )
-            return ""
+            pass
 
         return self.render_string(path, set_resources=set_resources, **kwargs)
 

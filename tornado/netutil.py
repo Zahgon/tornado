@@ -201,33 +201,7 @@ if hasattr(socket, "AF_UNIX"):
         Returns a socket object (not a list of socket objects like
         `bind_sockets`)
         """
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        try:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except OSError as e:
-            if errno_from_exception(e) != errno.ENOPROTOOPT:
-                # Hurd doesn't support SO_REUSEADDR
-                raise
-        sock.setblocking(False)
-        # File names comprising of an initial null-byte denote an abstract
-        # namespace, on Linux, and therefore are not subject to file system
-        # orientated processing.
-        if not file.startswith("\0"):
-            try:
-                st = os.stat(file)
-            except FileNotFoundError:
-                pass
-            else:
-                if stat.S_ISSOCK(st.st_mode):
-                    os.remove(file)
-                else:
-                    raise ValueError("File %s exists and is not a socket", file)
-            sock.bind(file)
-            os.chmod(file, mode)
-        else:
-            sock.bind(file)
-        sock.listen(backlog)
-        return sock
+        pass
 
 
 def add_accept_handler(
@@ -265,22 +239,7 @@ def add_accept_handler(
         # Instead, we use the (default) listen backlog as a rough
         # heuristic for the number of connections we can reasonably
         # accept at once.
-        for i in range(_DEFAULT_BACKLOG):
-            if removed[0]:
-                # The socket was probably closed
-                return
-            try:
-                connection, address = sock.accept()
-            except BlockingIOError:
-                # EWOULDBLOCK indicates we have accepted every
-                # connection that is available.
-                return
-            except ConnectionAbortedError:
-                # ECONNABORTED indicates that there was a connection
-                # but it was closed while still in the accept queue.
-                # (observed on FreeBSD).
-                continue
-            callback(connection, address)
+        pass
 
     def remove_handler() -> None:
         io_loop.remove_handler(sock)
@@ -351,7 +310,7 @@ class Resolver(Configurable):
 
     @classmethod
     def configurable_default(cls) -> type["Resolver"]:
-        return DefaultLoopResolver
+        pass
 
     def resolve(
         self, host: str, port: int, family: socket.AddressFamily = socket.AF_UNSPEC

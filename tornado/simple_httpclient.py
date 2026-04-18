@@ -212,8 +212,7 @@ class SimpleAsyncHTTPClient(AsyncHTTPClient):
         )
 
     def _release_fetch(self, key: object) -> None:
-        del self.active[key]
-        self._process_queue()
+        pass
 
     def _remove_timeout(self, key: object) -> None:
         if key in self.waiting:
@@ -230,18 +229,7 @@ class SimpleAsyncHTTPClient(AsyncHTTPClient):
         :arg object key: A simple object to mark the request.
         :info string key: More detailed timeout information.
         """
-        request, callback, timeout_handle = self.waiting[key]
-        self.queue.remove((key, request, callback))
-
-        error_message = f"Timeout {info}" if info else "Timeout"
-        timeout_response = HTTPResponse(
-            request,
-            599,
-            error=HTTPTimeoutError(error_message),
-            request_time=self.io_loop.time() - request.start_time,
-        )
-        self.io_loop.add_callback(callback, timeout_response)
-        del self.waiting[key]
+        pass
 
 
 class _HTTPConnection(httputil.HTTPMessageDelegate):
@@ -477,12 +465,7 @@ class _HTTPConnection(httputil.HTTPMessageDelegate):
 
         :info string key: More detailed timeout information.
         """
-        self._timeout = None
-        error_message = f"Timeout {info}" if info else "Timeout"
-        if self.final_callback is not None:
-            self._handle_exception(
-                HTTPTimeoutError, HTTPTimeoutError(error_message), None
-            )
+        pass
 
     def _remove_timeout(self) -> None:
         if self._timeout is not None:

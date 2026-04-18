@@ -105,30 +105,7 @@ class CurlAsyncHTTPClient(AsyncHTTPClient):
         """Called by libcurl when it wants to change the file descriptors
         it cares about.
         """
-        event_map = {
-            pycurl.POLL_NONE: ioloop.IOLoop.NONE,
-            pycurl.POLL_IN: ioloop.IOLoop.READ,
-            pycurl.POLL_OUT: ioloop.IOLoop.WRITE,
-            pycurl.POLL_INOUT: ioloop.IOLoop.READ | ioloop.IOLoop.WRITE,
-        }
-        if event == pycurl.POLL_REMOVE:
-            if fd in self._fds:
-                self.io_loop.remove_handler(fd)
-                del self._fds[fd]
-        else:
-            ioloop_event = event_map[event]
-            # libcurl sometimes closes a socket and then opens a new
-            # one using the same FD without giving us a POLL_NONE in
-            # between.  This is a problem with the epoll IOLoop,
-            # because the kernel can tell when a socket is closed and
-            # removes it from the epoll automatically, causing future
-            # update_handler calls to fail.  Since we can't tell when
-            # this has happened, always use remove and re-add
-            # instead of update.
-            if fd in self._fds:
-                self.io_loop.remove_handler(fd)
-            self.io_loop.add_handler(fd, self._handle_events, ioloop_event)
-            self._fds[fd] = ioloop_event
+        pass
 
     def _set_timeout(self, msecs: int) -> None:
         """Called by libcurl to schedule a timeout."""
@@ -142,75 +119,23 @@ class CurlAsyncHTTPClient(AsyncHTTPClient):
         """Called by IOLoop when there is activity on one of our
         file descriptors.
         """
-        action = 0
-        if events & ioloop.IOLoop.READ:
-            action |= pycurl.CSELECT_IN
-        if events & ioloop.IOLoop.WRITE:
-            action |= pycurl.CSELECT_OUT
-        while True:
-            try:
-                ret, num_handles = self._multi.socket_action(fd, action)
-            except pycurl.error as e:
-                ret = e.args[0]
-            if ret != pycurl.E_CALL_MULTI_PERFORM:
-                break
-        self._finish_pending_requests()
+        pass
 
     def _handle_timeout(self) -> None:
         """Called by IOLoop when the requested timeout has passed."""
-        self._timeout = None
-        while True:
-            try:
-                ret, num_handles = self._multi.socket_action(pycurl.SOCKET_TIMEOUT, 0)
-            except pycurl.error as e:
-                ret = e.args[0]
-            if ret != pycurl.E_CALL_MULTI_PERFORM:
-                break
-        self._finish_pending_requests()
-
-        # In theory, we shouldn't have to do this because curl will
-        # call _set_timeout whenever the timeout changes.  However,
-        # sometimes after _handle_timeout we will need to reschedule
-        # immediately even though nothing has changed from curl's
-        # perspective.  This is because when socket_action is
-        # called with SOCKET_TIMEOUT, libcurl decides internally which
-        # timeouts need to be processed by using a monotonic clock
-        # (where available) while tornado uses python's time.time()
-        # to decide when timeouts have occurred.  When those clocks
-        # disagree on elapsed time (as they will whenever there is an
-        # NTP adjustment), tornado might call _handle_timeout before
-        # libcurl is ready.  After each timeout, resync the scheduled
-        # timeout with libcurl's current state.
-        new_timeout = self._multi.timeout()
-        if new_timeout >= 0:
-            self._set_timeout(new_timeout)
+        pass
 
     def _handle_force_timeout(self) -> None:
         """Called by IOLoop periodically to ask libcurl to process any
         events it may have forgotten about.
         """
-        while True:
-            try:
-                ret, num_handles = self._multi.socket_all()
-            except pycurl.error as e:
-                ret = e.args[0]
-            if ret != pycurl.E_CALL_MULTI_PERFORM:
-                break
-        self._finish_pending_requests()
+        pass
 
     def _finish_pending_requests(self) -> None:
         """Process any requests that were completed by the last
         call to multi.socket_action.
         """
-        while True:
-            num_q, ok_list, err_list = self._multi.info_read()
-            for curl in ok_list:
-                self._finish(curl)
-            for curl, errnum, errmsg in err_list:
-                self._finish(curl, errnum, errmsg)
-            if num_q == 0:
-                break
-        self._process_queue()
+        pass
 
     def _process_queue(self) -> None:
         while True:
@@ -259,56 +184,10 @@ class CurlAsyncHTTPClient(AsyncHTTPClient):
         curl_error: int | None = None,
         curl_message: str | None = None,
     ) -> None:
-        info = curl.info  # type: ignore
-        curl.info = None  # type: ignore
-        self._multi.remove_handle(curl)
-        self._free_list.append(curl)
-        buffer = info["buffer"]
-        if curl_error:
-            assert curl_message is not None
-            error: CurlError | None = CurlError(curl_error, curl_message)
-            assert error is not None
-            code = error.code
-            effective_url = None
-            buffer.close()
-            buffer = None
-        else:
-            error = None
-            code = curl.getinfo(pycurl.HTTP_CODE)
-            effective_url = curl.getinfo(pycurl.EFFECTIVE_URL)
-            buffer.seek(0)
-        # the various curl timings are documented at
-        # http://curl.haxx.se/libcurl/c/curl_easy_getinfo.html
-        time_info = dict(
-            queue=info["curl_start_ioloop_time"] - info["queue_start_time"],
-            namelookup=curl.getinfo(pycurl.NAMELOOKUP_TIME),
-            connect=curl.getinfo(pycurl.CONNECT_TIME),
-            appconnect=curl.getinfo(pycurl.APPCONNECT_TIME),
-            pretransfer=curl.getinfo(pycurl.PRETRANSFER_TIME),
-            starttransfer=curl.getinfo(pycurl.STARTTRANSFER_TIME),
-            total=curl.getinfo(pycurl.TOTAL_TIME),
-            redirect=curl.getinfo(pycurl.REDIRECT_TIME),
-        )
-        try:
-            info["callback"](
-                HTTPResponse(
-                    request=info["request"],
-                    code=code,
-                    headers=info["headers"],
-                    buffer=buffer,
-                    effective_url=effective_url,
-                    error=error,
-                    reason=info["headers"].get("X-Http-Reason", None),
-                    request_time=self.io_loop.time() - info["curl_start_ioloop_time"],
-                    start_time=info["curl_start_time"],
-                    time_info=time_info,
-                )
-            )
-        except Exception:
-            self.handle_callback_exception(info["callback"])
+        pass
 
     def handle_callback_exception(self, callback: Any) -> None:
-        app_log.error("Exception in callback %r", callback, exc_info=True)
+        pass
 
     def _curl_create(self) -> pycurl.Curl:
         curl = pycurl.Curl()
@@ -372,9 +251,7 @@ class CurlAsyncHTTPClient(AsyncHTTPClient):
                 )
 
             def write_function(b: bytes | bytearray) -> int:
-                assert request.streaming_callback is not None
-                self.io_loop.add_callback(request.streaming_callback, b)
-                return len(b)
+                pass
 
         else:
             write_function = buffer.write  # type: ignore
@@ -488,8 +365,7 @@ class CurlAsyncHTTPClient(AsyncHTTPClient):
             request_buffer = BytesIO(utf8(request.body or ""))
 
             def ioctl(cmd: int) -> None:
-                if cmd == curl.IOCMD_RESTARTREAD:  # type: ignore
-                    request_buffer.seek(0)
+                pass
 
             curl.setopt(pycurl.READFUNCTION, request_buffer.read)
             curl.setopt(pycurl.IOCTLFUNCTION, ioctl)
@@ -550,36 +426,10 @@ class CurlAsyncHTTPClient(AsyncHTTPClient):
         header_callback: Callable[[str], None] | None,
         header_line_bytes: bytes,
     ) -> None:
-        header_line = native_str(header_line_bytes.decode("latin1"))
-        if header_callback is not None:
-            self.io_loop.add_callback(header_callback, header_line)
-        # header_line as returned by curl includes the end-of-line characters.
-        # whitespace at the start should be preserved to allow multi-line headers
-        header_line = header_line.rstrip()
-        if header_line.startswith("HTTP/"):
-            headers.clear()
-            try:
-                _version, _code, reason = httputil.parse_response_start_line(
-                    header_line
-                )
-                header_line = "X-Http-Reason: %s" % reason
-            except httputil.HTTPInputError:
-                return
-        if not header_line:
-            return
-        headers.parse_line(header_line)
+        pass
 
     def _curl_debug(self, debug_type: int, debug_msg: str) -> None:
-        debug_types = ("I", "<", ">", "<", ">")
-        if debug_type == 0:
-            debug_msg = native_str(debug_msg)
-            curl_log.debug("%s", debug_msg.strip())
-        elif debug_type in (1, 2):
-            debug_msg = native_str(debug_msg)
-            for line in debug_msg.splitlines():
-                curl_log.debug("%s %s", debug_types[debug_type], line)
-        elif debug_type == 4:
-            curl_log.debug("%s %r", debug_types[debug_type], debug_msg)
+        pass
 
 
 class CurlError(HTTPError):
