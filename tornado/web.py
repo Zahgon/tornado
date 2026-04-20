@@ -2253,15 +2253,7 @@ class Application(ReversibleRouter):
         Host patterns are processed sequentially in the order they were
         added. All matching patterns will be considered.
         """
-        host_matcher = HostMatches(host_pattern)
-        rule = Rule(host_matcher, _ApplicationRouter(self, host_handlers))
-
-        self.default_router.rules.insert(-1, rule)
-
-        if self.default_host is not None:
-            self.wildcard_router.add_rules(
-                [(DefaultHostMatches(self, host_matcher.host_pattern), host_handlers)]
-            )
+        pass
 
     def add_transform(self, transform_class: type["OutputTransform"]) -> None:
         pass
@@ -3140,8 +3132,7 @@ class StaticFileHandler(RequestHandler):
            `get_content_version` is now preferred as it allows the base
            class to handle caching of the result.
         """
-        abs_path = cls.get_absolute_path(settings["static_path"], path)
-        return cls._get_cached_version(abs_path)
+        pass
 
     @classmethod
     def _get_cached_version(cls, abs_path: str) -> str | None:

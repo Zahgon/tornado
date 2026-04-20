@@ -144,25 +144,7 @@ def load_gettext_translations(directory: str, domain: str) -> None:
 
         msgfmt mydomain.po -o {directory}/pt_BR/LC_MESSAGES/mydomain.mo
     """
-    global _translations
-    global _supported_locales
-    global _use_gettext
-    _translations = {}
-
-    for filename in glob.glob(
-        os.path.join(directory, "*", "LC_MESSAGES", domain + ".mo")
-    ):
-        lang = os.path.basename(os.path.dirname(os.path.dirname(filename)))
-        try:
-            _translations[lang] = gettext.translation(
-                domain, directory, languages=[lang]
-            )
-        except Exception as e:
-            gen_log.error("Cannot load translation for '%s': %s", lang, str(e))
-            continue
-    _supported_locales = frozenset(list(_translations.keys()) + [_default_locale])
-    _use_gettext = True
-    gen_log.debug("Supported locales: %s", sorted(_supported_locales))
+    pass
 
 
 def get_supported_locales() -> Iterable[str]:

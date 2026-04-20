@@ -186,10 +186,7 @@ class AsyncHTTPClient(Configurable):
 
     @classmethod
     def _async_clients(cls) -> dict[IOLoop, "AsyncHTTPClient"]:
-        attr_name = "_async_client_dict_" + cls.__name__
-        if not hasattr(cls, attr_name):
-            setattr(cls, attr_name, weakref.WeakKeyDictionary())
-        return getattr(cls, attr_name)
+        pass
 
     def __new__(cls, force_instance: bool = False, **kwargs: Any) -> "AsyncHTTPClient":
         io_loop = IOLoop.current()

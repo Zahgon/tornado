@@ -296,17 +296,7 @@ class Configurable:
     @classmethod
     def configured_class(cls) -> type[Configurable]:
         """Returns the currently configured class."""
-        base = cls.configurable_base()
-        # Manually mangle the private name to see whether this base
-        # has been configured (and not another base higher in the
-        # hierarchy).
-        if base.__dict__.get("_Configurable__impl_class") is None:
-            base.__impl_class = cls.configurable_default()
-        if base.__impl_class is not None:
-            return base.__impl_class
-        else:
-            # Should be impossible, but mypy wants an explicit check.
-            raise ValueError("configured class not found")
+        pass
 
     @classmethod
     def _save_configuration(

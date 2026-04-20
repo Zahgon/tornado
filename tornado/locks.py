@@ -40,10 +40,7 @@ class _TimeoutGarbageCollector:
 
     def _garbage_collect(self) -> None:
         # Occasionally clear timed-out waiters.
-        self._timeouts += 1
-        if self._timeouts > 100:
-            self._timeouts = 0
-            self._waiters = collections.deque(w for w in self._waiters if not w.done())
+        pass
 
 
 class Condition(_TimeoutGarbageCollector):
@@ -201,7 +198,7 @@ class Event:
 
     def is_set(self) -> bool:
         """Return ``True`` if the internal flag is true."""
-        return self._value
+        pass
 
     def set(self) -> None:
         """Set the internal flag to ``True``. All waiters are awakened.
@@ -385,20 +382,7 @@ class Semaphore(_TimeoutGarbageCollector):
 
     def release(self) -> None:
         """Increment the counter and wake one waiter."""
-        self._value += 1
-        while self._waiters:
-            waiter = self._waiters.popleft()
-            if not waiter.done():
-                self._value -= 1
-
-                # If the waiter is a coroutine paused at
-                #
-                #     with (yield semaphore.acquire()):
-                #
-                # then the context manager's __exit__ calls release() at the end
-                # of the "with" block.
-                waiter.set_result(_ReleasingContextManager(self))
-                break
+        pass
 
     def acquire(
         self, timeout: float | datetime.timedelta | None = None
@@ -408,23 +392,7 @@ class Semaphore(_TimeoutGarbageCollector):
         Block if the counter is zero and wait for a `.release`. The awaitable
         raises `.TimeoutError` after the deadline.
         """
-        waiter: Future[_ReleasingContextManager] = Future()
-        if self._value > 0:
-            self._value -= 1
-            waiter.set_result(_ReleasingContextManager(self))
-        else:
-            self._waiters.append(waiter)
-            if timeout:
-
-                def on_timeout() -> None:
-                    pass
-
-                io_loop = ioloop.IOLoop.current()
-                timeout_handle = io_loop.add_timeout(timeout, on_timeout)
-                waiter.add_done_callback(
-                    lambda _: io_loop.remove_timeout(timeout_handle)
-                )
-        return waiter
+        pass
 
     def __enter__(self) -> None:
         raise RuntimeError("Use 'async with' instead of 'with' for Semaphore")
@@ -464,9 +432,7 @@ class BoundedSemaphore(Semaphore):
 
     def release(self) -> None:
         """Increment the counter and wake one waiter."""
-        if self._value >= self._initial_value:
-            raise ValueError("Semaphore released too many times")
-        super().release()
+        pass
 
 
 class Lock:
@@ -520,7 +486,7 @@ class Lock:
         Returns an awaitable, which raises `tornado.util.TimeoutError` after a
         timeout.
         """
-        return self._block.acquire(timeout)
+        pass
 
     def release(self) -> None:
         """Unlock.
@@ -529,10 +495,7 @@ class Lock:
 
         If not locked, raise a `RuntimeError`.
         """
-        try:
-            self._block.release()
-        except ValueError:
-            raise RuntimeError("release unlocked lock")
+        pass
 
     def __enter__(self) -> None:
         raise RuntimeError("Use `async with` instead of `with` for Lock")

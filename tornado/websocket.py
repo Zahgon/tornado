@@ -350,11 +350,7 @@ class WebSocketHandler(tornado.web.RequestHandler):
            Consistently raises `WebSocketClosedError`. Previously could
            sometimes raise `.StreamClosedError`.
         """
-        if self.ws_connection is None or self.ws_connection.is_closing():
-            raise WebSocketClosedError()
-        if isinstance(message, dict):
-            message = tornado.escape.json_encode(message)
-        return self.ws_connection.write_message(message, binary=binary)
+        pass
 
     def select_subprotocol(self, subprotocols: list[str]) -> str | None:
         """Override to implement subprotocol negotiation.
@@ -1075,36 +1071,7 @@ class WebSocketProtocol13(WebSocketProtocol):
         self, message: str | bytes | dict[str, Any], binary: bool = False
     ) -> "Future[None]":
         """Sends the given message to the client of this Web Socket."""
-        if binary:
-            opcode = 0x2
-        else:
-            opcode = 0x1
-        if isinstance(message, dict):
-            message = tornado.escape.json_encode(message)
-        message = tornado.escape.utf8(message)
-        assert isinstance(message, bytes)
-        self._message_bytes_out += len(message)
-        flags = 0
-        if self._compressor:
-            message = self._compressor.compress(message)
-            flags |= self.RSV1
-        # For historical reasons, write methods in Tornado operate in a semi-synchronous
-        # mode in which awaiting the Future they return is optional (But errors can
-        # still be raised). This requires us to go through an awkward dance here
-        # to transform the errors that may be returned while presenting the same
-        # semi-synchronous interface.
-        try:
-            fut = self._write_frame(True, opcode, message, flags=flags)
-        except StreamClosedError:
-            raise WebSocketClosedError()
-
-        async def wrapper() -> None:
-            try:
-                await fut
-            except StreamClosedError:
-                raise WebSocketClosedError()
-
-        return asyncio.ensure_future(wrapper())
+        pass
 
     def write_ping(self, data: bytes) -> None:
         """Send ping frame."""
@@ -1297,7 +1264,7 @@ class WebSocketProtocol13(WebSocketProtocol):
         initiated its closing handshake or if the stream has been
         shut down uncleanly.
         """
-        return self.stream.closed() or self.client_terminated or self.server_terminated
+        pass
 
     def set_nodelay(self, x: bool) -> None:
         self.stream.set_nodelay(x)
@@ -1514,9 +1481,7 @@ class WebSocketClientConnection(simple_httpclient._HTTPConnection):
            Exception raised on a closed stream changed from `.StreamClosedError`
            to `WebSocketClosedError`.
         """
-        if self.protocol is None:
-            raise WebSocketClosedError("Client connection has been closed")
-        return self.protocol.write_message(message, binary=binary)
+        pass
 
     def read_message(
         self,

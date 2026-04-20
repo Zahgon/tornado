@@ -325,16 +325,7 @@ class Queue(Generic[_T]):
         return f"<{type(self).__name__} {self._format()}>"
 
     def _format(self) -> str:
-        result = f"maxsize={self.maxsize!r}"
-        if getattr(self, "_queue", None):
-            result += " queue=%r" % self._queue
-        if self._getters:
-            result += " getters[%s]" % len(self._getters)
-        if self._putters:
-            result += " putters[%s]" % len(self._putters)
-        if self._unfinished_tasks:
-            result += " tasks=%s" % self._unfinished_tasks
-        return result
+        pass
 
 
 class PriorityQueue(Queue):
